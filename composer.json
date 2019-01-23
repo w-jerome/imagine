@@ -1,0 +1,34 @@
+{
+  "name": "wjerome/imagine",
+  "description": "Imagine (image-engine) is a PHP micro library to resize, thumbnail or apply filters to your images",
+  "keywords": [
+    "PHP",
+    "GD",
+    "image",
+    "engine",
+    "light",
+    "micro",
+    "resize",
+    "thumbnail",
+    "crop",
+    "filters",
+    "filters"
+  ],
+  "license": "MIT",
+  "authors": [
+    {
+      "name": "w-jerome",
+      "email": "jerome.wohlschlegel@gmail.com"
+    }
+  ],
+  "type": "library",
+  "require": {
+    "php": ">=5.4.0",
+    "ext-gd": "*"
+  },
+  "autoload": {
+    "psr-4": {
+      "Imagine\\": "src/"
+    }
+  }
+}

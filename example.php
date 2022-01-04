@@ -1,18 +1,17 @@
 <?php
-require __DIR__ . '/vendor/autoload.php';
+require __DIR__ . '/src/imagine.php';
 
 use Imagine\Imagine;
 
-$image = new Imagine("./example.jpg");
-$image->name("thumbnail_500-500");
-$image->width(500);
-$image->height(500);
-$image->processing("contain");
-$image->position("center center");
-$image->background("currentColor");
-$image->destination(null);
-$image->debug(true);
+$image = new Imagine('./tests/assets/example-valid.jpg');
+// $image->setName('thumbnail_500-500');
+$image->setWidth(500);
+$image->setHeight(500);
+$image->setFit('contain');
+$image->setPosition('center', 'center');
+$image->setBackground('currentColor');
+$image->setDestination(null);
 
-header("Content-type:image/jpeg");
+header('Content-type:image/jpeg');
 
 $image->render();

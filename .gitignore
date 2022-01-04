@@ -1,4 +1,9 @@
 .idea
 node_modules
 
-/vendor/
+/tests/temps/*
+!/tests/temps/.gitkeep
+/vendor
+
+# PHPUnit
+.phpunit.*

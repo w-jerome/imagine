@@ -1,5 +1,5 @@
 {
-  "name": "wjerome/imagine",
+  "name": "imagine/imagine",
   "description": "Imagine (image-engine) is a PHP micro library to resize, thumbnail or apply filters to your images",
   "keywords": [
     "PHP",
@@ -11,13 +11,12 @@
     "resize",
     "thumbnail",
     "crop",
-    "filters",
     "filters"
   ],
   "license": "MIT",
   "authors": [
     {
-      "name": "w-jerome",
+      "name": "Jérôme Wohlschlegel",
       "email": "jerome.wohlschlegel@gmail.com"
     }
   ],
@@ -30,5 +29,18 @@
     "psr-4": {
       "Imagine\\": "src/"
     }
+  },
+  "autoload-dev": {
+    "classmap": [
+      "src/"
+    ]
+  },
+  "scripts": {
+    "lint": "phpcs --standard=PSR12 --colors ./src/*.php",
+    "unit": "phpunit --configuration ./phpunit.xml"
+  },
+  "require-dev": {
+    "squizlabs/php_codesniffer": "^3.6",
+    "phpunit/phpunit": "^9.5"
   }
 }

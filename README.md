@@ -5,7 +5,7 @@
 ## Installation
 
 ```console
-composer require wjerome/imagine
+composer require imagine/imagine
 ```
 
 ## Usage
@@ -25,7 +25,7 @@ $image->addFilter('grayscale');                     // string: ('negate', 'grays
 $image->setType('png');                             // string: ('jpg', 'png') convert new image to new extension
 $image->setOverride(false);                         // bolean: override or not destination file
 $image->setDestination('./uploads/');               // string/null: the path of new image, null return the raw image stream directly
-$image->setDebug(true);                             // boolean: return php error
+$image->setDebug(false);                            // boolean: return php error
 
 $imageName = $image->render(); // make new image and return the new image name with extension or return false
 

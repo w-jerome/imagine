@@ -3,10 +3,13 @@
 namespace Test\Imagine\Imagine;
 
 use PHPUnit\Framework\TestCase;
+use AssertGD\GDAssertTrait;
 use Imagine\Imagine;
 
 final class ImagineConstructorDestinationRenderTest extends TestCase
 {
+    use GDAssertTrait;
+
     private $fileValid = './tests/assets/example-valid.jpg';
 
     private $fileNotExist = './tests/assets/example-no-exist.jpg';
@@ -152,10 +155,13 @@ final class ImagineConstructorDestinationRenderTest extends TestCase
     public function test11(): void
     {
         $image = new Imagine($this->fileValid);
-        $image->setName('my-picture');
+        $image->setName('test-01-process-11');
         $image->setDestination($this->folderDestinationValid);
+        $filename = $image->render();
 
-        $this->assertSame('my-picture.jpg', $image->render());
+        $this->assertSame('test-01-process-11.jpg', $filename);
+        $this->assertFileExists($this->folderDestinationValid . DIRECTORY_SEPARATOR . $filename);
+        $this->assertSimilarGD($this->folderDestinationValid . DIRECTORY_SEPARATOR . $filename, './tests/assets/test-01/process-11.jpg');
     }
 
     /**
@@ -173,6 +179,6 @@ final class ImagineConstructorDestinationRenderTest extends TestCase
         $fileStream = ob_get_contents();
         ob_end_clean();
 
-        $this->assertStringContainsString('gd-jpeg', $fileStream);
+        $this->assertStringContainsString('gd-jpeg', substr($fileStream, 0, 100));
     }
 }

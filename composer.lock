@@ -4,7 +4,7 @@
         "Read more about it at https://getcomposer.org/doc/01-basic-usage.md#installing-dependencies",
         "This file is @generated automatically"
     ],
-    "content-hash": "f00b717b71c78549e367ec69928e0515",
+    "content-hash": "b6ed8fb800e4e41fa512f642e39a3194",
     "packages": [],
     "packages-dev": [
         {
@@ -75,6 +75,60 @@
                 }
             ],
             "time": "2020-11-10T18:47:58+00:00"
+        },
+        {
+            "name": "meyfa/phpunit-assert-gd",
+            "version": "v3.0.0",
+            "source": {
+                "type": "git",
+                "url": "https://github.com/meyfa/phpunit-assert-gd.git",
+                "reference": "ba52809fea7f699165eefa55f97f8858ada14cfc"
+            },
+            "dist": {
+                "type": "zip",
+                "url": "https://api.github.com/repos/meyfa/phpunit-assert-gd/zipball/ba52809fea7f699165eefa55f97f8858ada14cfc",
+                "reference": "ba52809fea7f699165eefa55f97f8858ada14cfc",
+                "shasum": ""
+            },
+            "require": {
+                "ext-gd": "*",
+                "php": ">=7.3",
+                "phpunit/phpunit": "^9.0"
+            },
+            "require-dev": {
+                "phpmd/phpmd": "@stable"
+            },
+            "type": "library",
+            "autoload": {
+                "psr-4": {
+                    "AssertGD\\": "src/"
+                }
+            },
+            "notification-url": "https://packagist.org/downloads/",
+            "license": [
+                "MIT"
+            ],
+            "authors": [
+                {
+                    "name": "Fabian Meyer",
+                    "homepage": "http://meyfa.net"
+                }
+            ],
+            "description": "PHPUnit matcher/assertions for GD image resources",
+            "homepage": "https://github.com/meyfa/phpunit-assert-gd",
+            "keywords": [
+                "assert",
+                "gd",
+                "image",
+                "matcher",
+                "phpunit",
+                "resource"
+            ],
+            "support": {
+                "issues": "https://github.com/meyfa/phpunit-assert-gd/issues",
+                "source": "https://github.com/meyfa/phpunit-assert-gd/tree/v3.0.0"
+            },
+            "time": "2021-02-05T22:40:48+00:00"
         },
         {
             "name": "myclabs/deep-copy",

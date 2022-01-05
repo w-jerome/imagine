@@ -17,21 +17,20 @@ class Imagine
     private $srcHeight = 0;
     private $srcMime = '';
     private $srcExtension = '';
+    private $srcDPI = array(0, 0);
     private $dist = null;
     private $distPath = '';
     private $distWidth = 0;
     private $distHeight = 0;
     private $distExtension = '';
+    private $distDPI = array(0, 0);
     private $distX = 0;
     private $distY = 0;
     private $thumbWidth = 0;
     private $thumbHeight = 0;
     private $quality = 100;
     private $fit = 'stretch';
-    private $position = array(
-        'x' => 'center',
-        'y' => 'center',
-    );
+    private $position = array('center', 'center');
     private $filters = array();
     private $background = array('r' => 255, 'g' => 255, 'b' => 255, 'a' => 1);
     private $isOverride = true;
@@ -77,11 +76,113 @@ class Imagine
 
         $this->srcPath = $imgSrc;
 
-        $this->setSrcSize();
         $this->setSrcMime();
+        $this->setSrc();
+
+        if (empty($this->src)) {
+            if ($this->isDebug) {
+                throw new \Exception('There was a problem when generating the source file');
+            }
+            return $this;
+        }
+
+        $this->setSrcSize();
         $this->setSrcExtension();
+        $this->setSrcDPI();
 
         return $this;
+    }
+
+    /**
+     * Set source image mime
+     *
+     * @return void
+     */
+    private function setSrcMime()
+    {
+        $finfo = finfo_open(FILEINFO_MIME_TYPE);
+
+        $this->srcMime = finfo_file($finfo, $this->srcPath);
+
+        finfo_close($finfo);
+    }
+
+    /**
+     * Set source image
+     *
+     * @return void
+     */
+    private function setSrc()
+    {
+        if ($this->srcMime === 'image/jpeg') {
+            $this->src = imagecreatefromjpeg($this->srcPath);
+        } elseif ($this->srcMime === 'image/png') {
+            $this->src = imagecreatefrompng($this->srcPath);
+        } elseif ($this->srcMime === 'image/gif') {
+            $this->src = imagecreatefromgif($this->srcPath);
+        }
+    }
+
+    /**
+     * Set source image width and height
+     *
+     * @return void
+     */
+    private function setSrcSize()
+    {
+        $info = getimagesize($this->srcPath);
+
+        if (empty($info)) {
+            if ($this->isDebug) {
+                throw new \Exception('There was an error when filling in the image size');
+            }
+            return false;
+        }
+
+        $this->srcWidth = $info[0];
+        $this->srcHeight = $info[1];
+    }
+
+    /**
+     * Set source image extension
+     *
+     * @return void
+     */
+    private function setSrcExtension()
+    {
+        if ($this->srcMime === 'image/jpeg') {
+            $info = @pathinfo($this->srcPath);
+
+            if (!empty($info)) {
+                $this->srcExtension = $info['extension']; // It can be "jpeg"... Honestly
+            } else {
+                $this->srcExtension = 'jpg';
+            }
+        } elseif ($this->srcMime === 'image/png') {
+            $this->srcExtension = 'png';
+        } elseif ($this->srcMime === 'image/gif') {
+            $this->srcExtension = 'gif';
+        }
+    }
+
+    /**
+     * Set source image DPI
+     *
+     * @return boolean
+     */
+    private function setSrcDPI()
+    {
+        $dpi = @imageresolution($this->src);
+
+        if (empty($dpi)) {
+            if ($this->isDebug) {
+                throw new \Exception('There was an error while searching for the resolution');
+            }
+        }
+
+        $this->srcDPI = $dpi ?? array(72, 72);
+
+        return true;
     }
 
     /**
@@ -147,7 +248,6 @@ class Imagine
      */
     public function getDistWidth()
     {
-        $this->caclculSize();
         return $this->distWidth;
     }
 
@@ -186,8 +286,93 @@ class Imagine
      */
     public function getDistHeight()
     {
-        $this->caclculSize();
         return $this->distHeight;
+    }
+
+    /**
+     * Get source image mime
+     *
+     * @return string
+     */
+    public function getSrcMime()
+    {
+        return $this->srcMime;
+    }
+
+    /**
+     * Set new file type
+     *
+     * @param string $extension Destination file type
+     *
+     * @return void
+     */
+    public function setExtension(string $extension = '')
+    {
+        if (!in_array($extension, self::TYPES_ALLOWED)) {
+            return false;
+        }
+
+        $this->distExtension = $extension;
+
+        return true;
+    }
+
+    /**
+     * Get source file type
+     *
+     * @return string
+     */
+    public function getSrcExtension()
+    {
+        return $this->srcExtension;
+    }
+
+    /**
+     * Get destination file type
+     *
+     * @return string
+     */
+    public function getDistExtension()
+    {
+        return $this->distExtension;
+    }
+
+    /**
+     * Set destination file DPI
+     *
+     * @param int $dpiX Destination file DPI x
+     * @param int $dpiY Destination file DPI y
+     *
+     * @return int
+     */
+    public function setDPI(int $dpiX = 72, int $dpiY = 72)
+    {
+        $dpiX = ($dpiX <= 0) ? 72 : $dpiX;
+        $dpiY = ($dpiY <= 0) ? 72 : $dpiY;
+
+        $this->distDPI = array($dpiX, $dpiY);
+
+        return $this->distDPI;
+    }
+
+    /**
+     * Get source file DPI
+     *
+     * @return array
+     */
+    public function getSrcDPI()
+    {
+        return $this->srcDPI;
+    }
+
+    /**
+     * Get destination file DPI
+     *
+     * @return int
+     */
+    public function getDistDPI()
+    {
+        return $this->distDPI;
     }
 
     /**
@@ -218,45 +403,6 @@ class Imagine
     public function getQuality()
     {
         return $this->quality;
-    }
-
-    /**
-     * Set new file type
-     *
-     * @param string $extension Destination file type
-     *
-     * @return void
-     */
-    public function setType(string $extension = '')
-    {
-        if (!in_array($extension, self::TYPES_ALLOWED)) {
-            return false;
-        }
-
-        $this->distExtension = $extension;
-
-        return true;
-    }
-
-    /**
-     * Get source file type
-     *
-     * @return string
-     */
-    public function getSrcType()
-    {
-        return $this->srcExtension;
-    }
-
-    /**
-     * Get destination file type
-     *
-     * @return string
-     */
-    public function getDistType()
-    {
-        $this->convertType();
-        return $this->distExtension;
     }
 
     /**
@@ -304,10 +450,7 @@ class Imagine
             return false;
         }
 
-        $this->position = array(
-            'x' => $x,
-            'y' => $y,
-        );
+        $this->position = array($x, $y);
 
         return true;
     }
@@ -320,6 +463,97 @@ class Imagine
     public function getPosition()
     {
         return $this->position;
+    }
+
+    /**
+     * Set background color
+     *
+     * @param string|array $background Background color
+     *
+     * @return boolean
+     */
+    public function setBackground($background = null)
+    {
+        if (!is_string($background) && !is_array($background)) {
+            return false;
+        }
+
+        $bgDefault = array(
+            'r' => 255,
+            'g' => 255,
+            'b' => 255,
+            'a' => 1,
+        );
+
+        if (is_array($background)) {
+            $bg = array_merge($bgDefault, $background);
+
+            $this->background['r'] = $bg['r'] >= 0 && $bg['r'] <= 255 ? (int) $bg['r'] : 255;
+            $this->background['g'] = $bg['g'] >= 0 && $bg['g'] <= 255 ? (int) $bg['g'] : 255;
+            $this->background['b'] = $bg['b'] >= 0 && $bg['b'] <= 255 ? (int) $bg['b'] : 255;
+            $this->background['a'] = $bg['a'] >= 0 && $bg['a'] <= 1 ? (float) $bg['a'] : 1;
+        } elseif ($background === 'transparent') {
+            $this->background = array(
+                'r' => 255,
+                'g' => 255,
+                'b' => 255,
+                'a' => 0,
+            );
+
+            return true;
+        } elseif ($background === 'currentColor' || $background === 'currentcolor') {
+            try {
+                $image = !empty($this->src) ? $this->src : null;
+
+                if (empty($image)) {
+                    if ($this->isDebug) {
+                        throw new \Exception('There was an error when filling in the background color');
+                    }
+                    return false;
+                }
+
+                $thumb = @imagecreatetruecolor(1, 1);
+                @imagecopyresampled($thumb, $image, 0, 0, 0, 0, 1, 1, imagesx($image), imagesy($image));
+
+                $mainColor = @strtolower(dechex(imagecolorat($thumb, 0, 0)));
+                $mainColor = '#' . $mainColor;
+
+                imagedestroy($thumb);
+
+                $this->background = $this->getHexaToRGBA($mainColor);
+
+                return true;
+            } catch (\Exception $error) {
+                return false;
+            }
+        } elseif (preg_match("/^(#|)[a-fA-F0-9]{3,6}$/i", $background)) {
+            $this->background = $this->getHexaToRGBA($background);
+            return true;
+        }
+
+        return false;
+    }
+
+    /**
+     * Get background color
+     *
+     * @return array
+     */
+    public function getBackground()
+    {
+        return $this->background;
+    }
+
+    /**
+     * Get background color to hexa
+     *
+     * @return string
+     */
+    public function getBackgroundToHexa()
+    {
+        return str_pad(dechex($this->background['r']), 2, '0', STR_PAD_LEFT) .
+            str_pad(dechex($this->background['g']), 2, '0', STR_PAD_LEFT) .
+            str_pad(dechex($this->background['b']), 2, '0', STR_PAD_LEFT);
     }
 
     /**
@@ -363,91 +597,6 @@ class Imagine
     public function getFilters()
     {
         return $this->filters;
-    }
-
-    /**
-     * Set background color
-     *
-     * @param string|array $background Background color
-     *
-     * @return boolean
-     */
-    public function setBackground($background = null)
-    {
-        if (!is_string($background) && !is_array($background)) {
-            return false;
-        }
-
-        if (is_array($background)) {
-            $this->background['r'] =
-              array_key_exists('r', $background) && $background['r'] >= 0 && $background['r'] <= 255 ?
-                (int) $background['r'] : 255;
-            $this->background['g'] =
-              array_key_exists('g', $background) && $background['g'] >= 0 && $background['g'] <= 255 ?
-                (int) $background['g'] : 255;
-            $this->background['b'] =
-              array_key_exists('b', $background) && $background['b'] >= 0 && $background['b'] <= 255 ?
-                (int) $background['b'] : 255;
-            $this->background['a'] =
-              array_key_exists('a', $background) && $background['a'] >= 0 && $background['a'] <= 1 ?
-                (float) $background['a'] : 1;
-        } elseif (is_string($background) && $background === 'transparent') {
-            $this->background = array(
-            'r' => 255,
-            'g' => 255,
-            'b' => 255,
-            'a' => 0,
-            );
-        } elseif (is_string($background) && ($background === 'currentColor' || $background === 'currentcolor')) {
-            try {
-                $image = null;
-
-                if (!empty($this->srcPath) && $this->srcExtension === 'jpg') {
-                    $image = @imagecreatefromjpeg($this->srcPath);
-                } elseif (!empty($this->srcPath) && $this->srcExtension === 'png') {
-                    $image = @imagecreatefrompng($this->srcPath);
-                } elseif (!empty($this->srcPath) && $this->srcExtension === 'gif') {
-                    $image = @imagecreatefromgif($this->srcPath);
-                }
-
-                $thumb = @imagecreatetruecolor(1, 1);
-                @imagecopyresampled($thumb, $image, 0, 0, 0, 0, 1, 1, imagesx($image), imagesy($image));
-                $mainColor = @strtolower(dechex(imagecolorat($thumb, 0, 0)));
-                $mainColor = '#' . $mainColor;
-                imagedestroy($image);
-                imagedestroy($thumb);
-                $this->background = $this->hexToRGBA($mainColor);
-                return true;
-            } catch (\Exception $error) {
-                return false;
-            }
-        } elseif (preg_match("/^(#|)[a-fA-F0-9]{3,6}$/i", $background)) {
-            $this->background = $this->hexToRGBA($background);
-        }
-
-        return true;
-    }
-
-    /**
-     * Get background color
-     *
-     * @return array
-     */
-    public function getBackground()
-    {
-        return $this->background;
-    }
-
-    /**
-     * Get background color to hexa
-     *
-     * @return string
-     */
-    public function getBackgroundToHexa()
-    {
-        return str_pad(dechex($this->background['r']), 2, '0', STR_PAD_LEFT) .
-            str_pad(dechex($this->background['g']), 2, '0', STR_PAD_LEFT) .
-            str_pad(dechex($this->background['b']), 2, '0', STR_PAD_LEFT);
     }
 
     /**
@@ -537,49 +686,6 @@ class Imagine
     }
 
     /**
-     * Set source image width and height
-     *
-     * @return void
-     */
-    private function setSrcSize()
-    {
-        $info = getimagesize($this->srcPath);
-
-        $this->srcWidth = $info[0];
-        $this->srcHeight = $info[1];
-    }
-
-    /**
-     * Set source image mime
-     *
-     * @return void
-     */
-    private function setSrcMime()
-    {
-        $finfo = finfo_open(FILEINFO_MIME_TYPE);
-
-        $this->srcMime = finfo_file($finfo, $this->srcPath);
-
-        finfo_close($finfo);
-    }
-
-    /**
-     * Set source image extension
-     *
-     * @return void
-     */
-    private function setSrcExtension()
-    {
-        if ($this->srcMime === 'image/jpeg') {
-            $this->srcExtension = 'jpg';
-        } elseif ($this->srcMime === 'image/png') {
-            $this->srcExtension = 'png';
-        } elseif ($this->srcMime === 'image/gif') {
-            $this->srcExtension = 'gif';
-        }
-    }
-
-    /**
      * Destroy GD ressources
      *
      * @return void
@@ -632,32 +738,8 @@ class Imagine
             return false;
         }
 
-        $this->caclculSize();
-        $this->caclculPosition();
-
-        // Create source image
-        if ($this->srcMime == 'image/jpeg') {
-            // JPG
-            if ($this->isDebug) {
-                $this->src = imagecreatefromjpeg($this->srcPath);
-            } else {
-                $this->src = @imagecreatefromjpeg($this->srcPath);
-            }
-        } elseif ($this->srcMime == 'image/png') {
-            // PNG
-            if ($this->isDebug) {
-                $this->src = imagecreatefrompng($this->srcPath);
-            } else {
-                $this->src = @imagecreatefrompng($this->srcPath);
-            }
-        } elseif ($this->srcMime == 'image/gif') {
-            // GIF
-            if ($this->isDebug) {
-                $this->src = imagecreatefromgif($this->srcPath);
-            } else {
-                $this->src = @imagecreatefromgif($this->srcPath);
-            }
-        }
+        $this->calculDistSize();
+        $this->calculDistPosition();
 
         // If source image is not create
         if (empty($this->src)) {
@@ -667,16 +749,21 @@ class Imagine
             return false;
         }
 
-        if ($this->isDebug) {
-            $this->dist = imagecreatetruecolor($this->thumbWidth, $this->thumbHeight);
-        } else {
-            $this->dist = @imagecreatetruecolor($this->thumbWidth, $this->thumbHeight);
-        }
+        $this->dist = @imagecreatetruecolor($this->thumbWidth, $this->thumbHeight);
 
-        // If temp destination image is not create
         if (empty($this->dist)) {
             if ($this->isDebug) {
-                throw new \Exception('Can\'t create the temp destination image');
+                throw new \Exception('There is a problem when processing the destination file');
+            }
+            return false;
+        }
+
+        $this->replaceDistDPIIfEmpty();
+        $dpi = @imageresolution($this->dist, $this->distDPI[0], $this->distDPI[1]);
+
+        if (empty($dpi)) {
+            if ($this->isDebug) {
+                throw new \Exception('There is a problem when processing the destination file');
             }
             return false;
         }
@@ -777,7 +864,7 @@ class Imagine
         }
 
         // Set the final extension if there is no conversion done on the file
-        $this->convertType();
+        $this->replaceDistExtensionIfEmpty();
 
         $destinationFilePath = $this->distPath;
         $destinationFileName = $this->name . '.' . $this->distExtension;
@@ -829,7 +916,7 @@ class Imagine
      *
      * @return void
      */
-    private function caclculSize()
+    private function calculDistSize()
     {
         // On vérifit si c'est un redimmenssionnement
         if ($this->thumbWidth > 0 xor $this->thumbHeight > 0) {
@@ -909,7 +996,7 @@ class Imagine
      *
      * @return void
      */
-    private function caclculPosition()
+    private function calculDistPosition()
     {
         // Extract datas
         $x = 0;
@@ -918,20 +1005,20 @@ class Imagine
         // We do the calculation only if we are in "contain" or "cover".
         if ($this->fit === 'contain' || $this->fit === 'cover') {
             // X calcul
-            if ($this->position['x'] === 'left') {
+            if ($this->position[0] === 'left') {
                 $x = 0;
-            } elseif ($this->position['x'] === 'center') {
+            } elseif ($this->position[0] === 'center') {
                 $x = ($this->thumbWidth - $this->distWidth) / 2;
-            } elseif ($this->position['x'] === 'right') {
+            } elseif ($this->position[0] === 'right') {
                 $x = $this->thumbWidth - $this->distWidth;
             }
 
             // Y Calcul
-            if ($this->position['y'] === 'top') {
+            if ($this->position[1] === 'top') {
                 $y = 0;
-            } elseif ($this->position['y'] === 'center') {
+            } elseif ($this->position[1] === 'center') {
                 $y = ($this->thumbHeight - $this->distHeight) / 2;
-            } elseif ($this->position['y'] === 'bottom') {
+            } elseif ($this->position[1] === 'bottom') {
                 $y = $this->thumbHeight - $this->distHeight;
             }
         }
@@ -943,10 +1030,22 @@ class Imagine
     /**
      * Set the final extension if there is no conversion done on the file
      */
-    private function convertType()
+    private function replaceDistExtensionIfEmpty()
     {
         if (empty($this->distExtension)) {
             $this->distExtension = $this->srcExtension;
+        }
+    }
+
+    /**
+     * Set destination position in thumbnail
+     *
+     * @return void
+     */
+    private function replaceDistDPIIfEmpty()
+    {
+        if (empty($this->distDPI[0]) && empty($this->distDPI[1])) {
+            $this->distDPI = $this->srcDPI;
         }
     }
 
@@ -957,7 +1056,7 @@ class Imagine
      *
      * @return array
      */
-    private function hexToRGBA(string $hex = '')
+    private function getHexaToRGBA(string $hex = '')
     {
         $r = 255;
         $g = 255;

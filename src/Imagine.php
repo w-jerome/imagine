@@ -606,7 +606,7 @@ class Imagine
      *
      * @return boolean
      */
-    public function setOverride(bool $isOverride = true)
+    public function setIsOverride(bool $isOverride = true)
     {
         $this->isOverride = $isOverride;
 
@@ -618,7 +618,7 @@ class Imagine
      *
      * @return boolean
      */
-    public function getOverride()
+    public function getIsOverride()
     {
         return $this->isOverride;
     }
@@ -668,7 +668,7 @@ class Imagine
      *
      * @return boolean
      */
-    public function setDebug(bool $isDebug = false)
+    public function setIsDebug(bool $isDebug = false)
     {
         $this->isDebug = $isDebug;
 
@@ -680,7 +680,7 @@ class Imagine
      *
      * @return boolean
      */
-    public function getDebug()
+    public function getIsDebug()
     {
         return $this->isDebug;
     }

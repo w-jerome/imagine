@@ -24,9 +24,9 @@ $image->setFit('cover');                            // string: ('stretch', 'cove
 $image->setPosition('center', 'center');            // string: ('left', 'top') ('center', 'bottom') ('right', 'center') ('right', 'top') where the new image is placed
 $image->setBackground('currentColor');              // string/array: ('ffffff', '#000000', 'faa', 'currentColor', array("r" => 255, "g" => 255, "b" => 255, "a" => 1)) the background color of the image, "currentColor" uses the main color of the image, The array manage the alpha channel
 $image->addFilter('grayscale');                     // string: ('negate', 'grayscale', 'edgedetect', 'emboss', 'mean_removal', 'blur') apply filtres to new image
-$image->setOverride(false);                         // bolean: override or not destination file
+$image->setIsOverride(false);                         // bolean: override or not destination file
 $image->setDestination('./uploads/');               // string/null: the path of new image, null return the raw image stream directly
-$image->setDebug(false);                            // boolean: return php error
+$image->setIsDebug(false);                            // boolean: return php error
 
 $imageName = $image->render(); // make new image and return the new image name with extension or return false
 
@@ -56,9 +56,9 @@ $image->getPosition();
 $image->getBackground();
 $image->getBackgroundToHexa();
 $image->getFilters();
-$image->getOverride();
+$image->getIsOverride();
 $image->getDestination();
-$image->getDebug();
+$image->getIsDebug();
 
 if ($image->render()) {
   $image->getDistWidth();

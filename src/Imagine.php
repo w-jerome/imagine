@@ -24,8 +24,6 @@ class Imagine
     private $distHeight = 0;
     private $distExtension = '';
     private $distDPI = array(0, 0);
-    private $distX = 0;
-    private $distY = 0;
     private $thumbWidth = 0;
     private $thumbHeight = 0;
     private $quality = 100;
@@ -248,7 +246,7 @@ class Imagine
      */
     public function getDistWidth()
     {
-        return $this->distWidth;
+        return $this->thumbWidth;
     }
 
     /**
@@ -286,7 +284,7 @@ class Imagine
      */
     public function getDistHeight()
     {
-        return $this->distHeight;
+        return $this->thumbHeight;
     }
 
     /**
@@ -535,6 +533,44 @@ class Imagine
     }
 
     /**
+     * Convert Hexadecimal to RGBA
+     *
+     * @param string $hex Hexadecimal color
+     *
+     * @return array
+     */
+    private function getHexaToRGBA(string $hex = '')
+    {
+        $r = 255;
+        $g = 255;
+        $b = 255;
+        $a = 1;
+
+        if (empty($hex)) {
+            return array(
+                'r' => $r,
+                'g' => $g,
+                'b' => $b,
+                'a' => $a
+            );
+        }
+
+        $hex = str_replace('#', '', $hex);
+        $hex = mb_strlen($hex) === 3 ? $hex . $hex : $hex;
+
+        $r = strlen($hex) === 6 ? hexdec(substr($hex, 0, 2)) : $r;
+        $g = strlen($hex) === 6 ? hexdec(substr($hex, 2, 2)) : $g;
+        $b = strlen($hex) === 6 ? hexdec(substr($hex, 4, 2)) : $b;
+
+        return array(
+            'r' => $r,
+            'g' => $g,
+            'b' => $b,
+            'a' => $a
+        );
+    }
+
+    /**
      * Get background color
      *
      * @return array
@@ -686,17 +722,6 @@ class Imagine
     }
 
     /**
-     * Destroy GD ressources
-     *
-     * @return void
-     */
-    private function destroyTempImg()
-    {
-        @imagedestroy($this->dist);
-        @imagedestroy($this->src);
-    }
-
-    /**
      * Launch image generation
      *
      * @return string|bool Returns the name of the file, otherwise it returns false
@@ -710,25 +735,20 @@ class Imagine
             return false;
         }
 
-        if (is_string($this->distPath) && empty($this->distPath)) {
-            if ($this->isDebug) {
-                throw new \Exception('The destination path does not exist');
+        if (is_string($this->distPath)) {
+            if (empty($this->distPath)) {
+                if ($this->isDebug) {
+                    throw new \Exception('The destination path does not exist');
+                }
+                return false;
             }
-            return false;
-        }
 
-        if (is_string($this->distPath) && empty($this->name)) {
-            if ($this->isDebug) {
-                throw new \Exception('Image name not register');
+            if (empty($this->name)) {
+                if ($this->isDebug) {
+                    throw new \Exception('Image name not register');
+                }
+                return false;
             }
-            return false;
-        }
-
-        if ($this->distPath === '') {
-            if ($this->isDebug) {
-                throw new \Exception('Bug with destination path');
-            }
-            return false;
         }
 
         if (!is_int($this->srcWidth) || !is_int($this->srcHeight)) {
@@ -738,9 +758,6 @@ class Imagine
             return false;
         }
 
-        $this->calculDistSize();
-        $this->calculDistPosition();
-
         // If source image is not create
         if (empty($this->src)) {
             if ($this->isDebug) {
@@ -749,6 +766,7 @@ class Imagine
             return false;
         }
 
+        $this->calculDistSizeFromThumbSize();
         $this->dist = @imagecreatetruecolor($this->thumbWidth, $this->thumbHeight);
 
         if (empty($this->dist)) {
@@ -758,7 +776,10 @@ class Imagine
             return false;
         }
 
-        $this->replaceDistDPIIfEmpty();
+        if (empty($this->distDPI[0]) || empty($this->distDPI[1])) {
+            $this->distDPI = $this->srcDPI;
+        }
+
         $dpi = @imageresolution($this->dist, $this->distDPI[0], $this->distDPI[1]);
 
         if (empty($dpi)) {
@@ -798,39 +819,45 @@ class Imagine
                 $this->background['b']
             );
             imagefilledrectangle($this->dist, 0, 0, $this->thumbWidth, $this->thumbHeight, $color);
+            unset($color);
         }
-
-        unset($color);
 
         // Copy the source image to the destination image
-        $isSampled = false;
-        if ($this->isDebug) {
-            $isSampled = imagecopyresampled(
-                $this->dist,
-                $this->src,
-                $this->distX,
-                $this->distY,
-                0,
-                0,
-                $this->distWidth,
-                $this->distHeight,
-                $this->srcWidth,
-                $this->srcHeight
-            );
-        } else {
-            $isSampled = @imagecopyresampled(
-                $this->dist,
-                $this->src,
-                $this->distX,
-                $this->distY,
-                0,
-                0,
-                $this->distWidth,
-                $this->distHeight,
-                $this->srcWidth,
-                $this->srcHeight
-            );
+        $position = array(0, 0); // x, y
+
+        // We do the calculation only if we are in "contain" or "cover".
+        if ($this->fit === 'contain' || $this->fit === 'cover') {
+            // X calcul
+            if ($this->position[0] === 'left') {
+                $position[0] = 0;
+            } elseif ($this->position[0] === 'center') {
+                $position[0] = ($this->thumbWidth - $this->distWidth) / 2;
+            } elseif ($this->position[0] === 'right') {
+                $position[0] = $this->thumbWidth - (int) $this->distWidth;
+            }
+
+            // Y Calcul
+            if ($this->position[1] === 'top') {
+                $position[1] = 0;
+            } elseif ($this->position[1] === 'center') {
+                $position[1] = ($this->thumbHeight - $this->distHeight) / 2;
+            } elseif ($this->position[1] === 'bottom') {
+                $position[1] = $this->thumbHeight - (int) $this->distHeight;
+            }
         }
+
+        $isSampled = imagecopyresampled(
+            $this->dist,
+            $this->src,
+            $position[0],
+            $position[1],
+            0,
+            0,
+            $this->distWidth,
+            $this->distHeight,
+            $this->srcWidth,
+            $this->srcHeight
+        );
 
         if (!$isSampled) {
             if ($this->isDebug) {
@@ -852,60 +879,59 @@ class Imagine
                 for ($i = 0; $i < $value; $i++) {
                     $check = imagefilter($this->dist, $filterConstant);
                     if (!$check && $this->isDebug) {
-                        throw new \Exception('Can\'t apply filter');
+                        throw new \Exception('Can\'t apply filter ' . $filter);
                     }
                 }
             } else {
                 $check = imagefilter($this->dist, $filterConstant);
                 if (!$check && $this->isDebug) {
-                    throw new \Exception('Can\'t apply filter');
+                    throw new \Exception('Can\'t apply filter ' . $filter);
                 }
             }
         }
 
         // Set the final extension if there is no conversion done on the file
-        $this->replaceDistExtensionIfEmpty();
+        if (empty($this->distExtension)) {
+            $this->distExtension = $this->srcExtension;
+        }
 
-        $destinationFilePath = $this->distPath;
-        $destinationFileName = $this->name . '.' . $this->distExtension;
+        $distPath = $this->distPath;
+        $distName = $this->name . '.' . $this->distExtension;
 
         if (is_string($this->distPath) && !empty($this->distPath)) {
-            $destinationFilePath =
-              preg_replace('/(\/)+$/', '', $this->distPath) . DIRECTORY_SEPARATOR . $destinationFileName;
+            $distPath = rtrim($this->distPath, DIRECTORY_SEPARATOR) . DIRECTORY_SEPARATOR . $distName;
 
             // Stop the process if the file exists and the override is disabled
-            if (file_exists($destinationFilePath) && !$this->isOverride) {
+            if (file_exists($distPath) && !$this->isOverride) {
                 $this->destroyTempImg();
                 return false;
             }
         }
 
-        $imageCreate = false;
+        $isCreate = false;
 
         if ($this->distExtension === 'jpg' || $this->distExtension === 'jpeg') {
-            $imageCreate = imagejpeg($this->dist, $destinationFilePath, $this->quality);
+            $isCreate = imagejpeg($this->dist, $distPath, $this->quality);
         } elseif ($this->distExtension === 'png') {
-            $quality = ($this->quality * 9) / 100;
-            $imageCreate = imagepng($this->dist, $destinationFilePath, $quality);
+            $isCreate = imagepng($this->dist, $distPath, ($this->quality * 9) / 100);
         } elseif ($this->distExtension === 'gif') {
-            $imageCreate = imagegif($this->dist, $destinationFilePath, $this->quality);
+            $isCreate = imagegif($this->dist, $distPath, $this->quality);
         } else {
-            $this->destroyTempImg();
-            return false;
-        }
-
-        if (!$imageCreate) {
-            if ($this->isDebug) {
-                throw new \Exception('Can\'t create destination image');
-            }
             $this->destroyTempImg();
             return false;
         }
 
         $this->destroyTempImg();
 
-        if ($imageCreate) {
-            return $destinationFileName;
+        if (!$isCreate) {
+            if ($this->isDebug) {
+                throw new \Exception('Can\'t create destination image');
+            }
+            return false;
+        }
+
+        if ($isCreate) {
+            return $distName;
         } else {
             return false;
         }
@@ -916,12 +942,12 @@ class Imagine
      *
      * @return void
      */
-    private function calculDistSize()
+    private function calculDistSizeFromThumbSize()
     {
         // On vérifit si c'est un redimmenssionnement
         if ($this->thumbWidth > 0 xor $this->thumbHeight > 0) {
             // On enregistre la taille une fois redimmenssionné
-            if (is_int($this->thumbWidth)) {
+            if ($this->thumbWidth) {
                 $this->thumbHeight = $this->srcHeight * ($this->thumbWidth / $this->srcWidth);
             } else {
                 $this->thumbWidth = $this->srcWidth * ($this->thumbHeight / $this->srcHeight);
@@ -938,32 +964,32 @@ class Imagine
             } elseif ($this->fit === 'contain' || $this->fit === 'cover') {
                 $fitAllowed = array(
                     'contain' => array(
-                    $this->thumbWidth > $this->thumbHeight &&
-                    $this->srcWidth > $this->srcHeight &&
-                    ($this->srcWidth * $this->thumbHeight) / $this->srcHeight < $this->thumbWidth
-                        ? true
-                        : false,
-                    $this->thumbWidth > $this->thumbHeight && $this->srcWidth <= $this->srcHeight ? true : false,
-                    $this->thumbWidth <= $this->thumbHeight &&
-                    $this->srcWidth < $this->srcHeight &&
-                    ($this->srcWidth * $this->thumbHeight) / $this->srcHeight < $this->thumbWidth
-                        ? true
-                        : false,
-                    $this->thumbWidth === $this->thumbHeight && $this->srcWidth === $this->srcHeight ? true : false
+                        $this->thumbWidth > $this->thumbHeight &&
+                        $this->srcWidth > $this->srcHeight &&
+                        ($this->srcWidth * $this->thumbHeight) / $this->srcHeight < $this->thumbWidth
+                            ? true
+                            : false,
+                        $this->thumbWidth > $this->thumbHeight && $this->srcWidth <= $this->srcHeight ? true : false,
+                        $this->thumbWidth <= $this->thumbHeight &&
+                        $this->srcWidth < $this->srcHeight &&
+                        ($this->srcWidth * $this->thumbHeight) / $this->srcHeight < $this->thumbWidth
+                            ? true
+                            : false,
+                        $this->thumbWidth === $this->thumbHeight && $this->srcWidth === $this->srcHeight ? true : false
                     ),
                     'cover' => array(
-                    $this->thumbWidth > $this->thumbHeight &&
-                    $this->srcWidth > $this->srcHeight &&
-                    ($this->srcWidth * $this->thumbHeight) / $this->srcHeight > $this->thumbWidth
-                        ? true
-                        : false,
-                    $this->thumbWidth <= $this->thumbHeight && $this->srcWidth > $this->srcHeight ? true : false,
-                    $this->thumbWidth < $this->thumbHeight &&
-                    $this->srcWidth <= $this->srcHeight &&
-                    ($this->srcWidth * $this->thumbHeight) / $this->srcHeight > $this->thumbWidth
-                        ? true
-                        : false,
-                    $this->thumbWidth === $this->thumbHeight && $this->srcWidth === $this->srcHeight ? true : false
+                        $this->thumbWidth > $this->thumbHeight &&
+                        $this->srcWidth > $this->srcHeight &&
+                        ($this->srcWidth * $this->thumbHeight) / $this->srcHeight > $this->thumbWidth
+                            ? true
+                            : false,
+                        $this->thumbWidth <= $this->thumbHeight && $this->srcWidth > $this->srcHeight ? true : false,
+                        $this->thumbWidth < $this->thumbHeight &&
+                        $this->srcWidth <= $this->srcHeight &&
+                        ($this->srcWidth * $this->thumbHeight) / $this->srcHeight > $this->thumbWidth
+                            ? true
+                            : false,
+                        $this->thumbWidth === $this->thumbHeight && $this->srcWidth === $this->srcHeight ? true : false
                     )
                 );
 
@@ -992,98 +1018,21 @@ class Imagine
     }
 
     /**
-     * Set destination position in thumbnail
+     * Destroy GD ressources
+     *
+     * @param bool $isSrcMustDestroy Destroy dist GD
+     * @param bool $isDistMustDestroy Destroy dist GD
      *
      * @return void
      */
-    private function calculDistPosition()
+    private function destroyTempImg(bool $isSrcMustDestroy = true, bool $isDistMustDestroy = true)
     {
-        // Extract datas
-        $x = 0;
-        $y = 0;
-
-        // We do the calculation only if we are in "contain" or "cover".
-        if ($this->fit === 'contain' || $this->fit === 'cover') {
-            // X calcul
-            if ($this->position[0] === 'left') {
-                $x = 0;
-            } elseif ($this->position[0] === 'center') {
-                $x = ($this->thumbWidth - $this->distWidth) / 2;
-            } elseif ($this->position[0] === 'right') {
-                $x = $this->thumbWidth - $this->distWidth;
-            }
-
-            // Y Calcul
-            if ($this->position[1] === 'top') {
-                $y = 0;
-            } elseif ($this->position[1] === 'center') {
-                $y = ($this->thumbHeight - $this->distHeight) / 2;
-            } elseif ($this->position[1] === 'bottom') {
-                $y = $this->thumbHeight - $this->distHeight;
-            }
+        if ($isSrcMustDestroy) {
+            @imagedestroy($this->src);
         }
 
-        $this->distX = $x;
-        $this->distY = $y;
-    }
-
-    /**
-     * Set the final extension if there is no conversion done on the file
-     */
-    private function replaceDistExtensionIfEmpty()
-    {
-        if (empty($this->distExtension)) {
-            $this->distExtension = $this->srcExtension;
+        if ($isDistMustDestroy) {
+            @imagedestroy($this->dist);
         }
-    }
-
-    /**
-     * Set destination position in thumbnail
-     *
-     * @return void
-     */
-    private function replaceDistDPIIfEmpty()
-    {
-        if (empty($this->distDPI[0]) && empty($this->distDPI[1])) {
-            $this->distDPI = $this->srcDPI;
-        }
-    }
-
-    /**
-     * Convert Hexadecimal to RGBA
-     *
-     * @param string $hex Hexadecimal color
-     *
-     * @return array
-     */
-    private function getHexaToRGBA(string $hex = '')
-    {
-        $r = 255;
-        $g = 255;
-        $b = 255;
-        $a = 1;
-
-        if (empty($hex)) {
-            return array(
-                'r' => $r,
-                'g' => $g,
-                'b' => $b,
-                'a' => $a
-            );
-        }
-
-        $hex = str_replace('#', '', $hex);
-        $hex = mb_strlen($hex) === 3 ? $hex . $hex : $hex;
-
-        $r = strlen($hex) === 6 ? hexdec(substr($hex, 0, 2)) : $r;
-        $g = strlen($hex) === 6 ? hexdec(substr($hex, 2, 2)) : $g;
-        $b = strlen($hex) === 6 ? hexdec(substr($hex, 4, 2)) : $b;
-
-        return array(
-            'r' => $r,
-            'g' => $g,
-            'b' => $b,
-            'a' => $a
-        );
     }
 }

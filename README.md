@@ -41,7 +41,6 @@ if ($imageName) {
 
 ```php
 $image = new Imagine('./my-picture.jpg');
-$image->setWidth(400);
 $image->setBackground('currentColor');
 
 $image->getName();

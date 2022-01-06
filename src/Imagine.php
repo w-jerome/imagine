@@ -8,9 +8,10 @@
 
 namespace Imagine;
 
+use phpDocumentor\Reflection\Types\Boolean;
+
 class Imagine
 {
-    private $name = '';
     private $src = null;
     private $srcPath = '';
     private $srcWidth = 0;
@@ -19,7 +20,6 @@ class Imagine
     private $srcExtension = '';
     private $srcDPI = array(0, 0);
     private $dist = null;
-    private $distPath = '';
     private $distWidth = 0;
     private $distHeight = 0;
     private $distExtension = '';
@@ -32,7 +32,6 @@ class Imagine
     private $filters = array();
     private $background = array('r' => 255, 'g' => 255, 'b' => 255, 'a' => 1);
     private $isOverride = true;
-    private $isDebug = true;
     private const TYPES_ALLOWED = array(
         'jpg',
         'jpeg',
@@ -78,9 +77,7 @@ class Imagine
         $this->setSrc();
 
         if (empty($this->src)) {
-            if ($this->isDebug) {
-                throw new \Exception('There was a problem when generating the source file');
-            }
+            throw new \Exception('There was a problem when generating the source file');
             return $this;
         }
 
@@ -130,10 +127,8 @@ class Imagine
     {
         $info = getimagesize($this->srcPath);
 
-        if (empty($info)) {
-            if ($this->isDebug) {
-                throw new \Exception('There was an error when filling in the image size');
-            }
+        if (empty($info) || (!is_int($info[0]) || !is_int($info[1]))) {
+            throw new \Exception('Bug with source image sizes');
             return false;
         }
 
@@ -149,10 +144,10 @@ class Imagine
     private function setSrcExtension()
     {
         if ($this->srcMime === 'image/jpeg') {
-            $info = @pathinfo($this->srcPath);
+            $extension = pathinfo($this->srcPath, PATHINFO_EXTENSION);
 
-            if (!empty($info)) {
-                $this->srcExtension = $info['extension']; // It can be "jpeg"... Honestly
+            if (!empty($extension) && $extension === 'jpeg') {
+                $this->srcExtension = $extension; // It can be "jpeg"... Honestly
             } else {
                 $this->srcExtension = 'jpg';
             }
@@ -170,45 +165,16 @@ class Imagine
      */
     private function setSrcDPI()
     {
-        $dpi = @imageresolution($this->src);
+        $dpi = imageresolution($this->src);
 
         if (empty($dpi)) {
-            if ($this->isDebug) {
-                throw new \Exception('There was an error while searching for the resolution');
-            }
+            throw new \Exception('There was an error while searching for the resolution');
+            return false;
         }
 
         $this->srcDPI = $dpi ?? array(72, 72);
 
         return true;
-    }
-
-    /**
-     * Set filename
-     *
-     * @param string $name Destination filename
-     *
-     * @return boolean
-     */
-    public function setName(string $name = '')
-    {
-        if (empty($name)) {
-            return false;
-        }
-
-        $this->name = $name;
-
-        return true;
-    }
-
-    /**
-     * Get filename
-     *
-     * @return string
-     */
-    public function getName()
-    {
-        return $this->name;
     }
 
     /**
@@ -246,7 +212,9 @@ class Imagine
      */
     public function getDistWidth()
     {
-        return $this->thumbWidth;
+        $size = $this->calculDistSizeFromThumbSize();
+
+        return $size[0];
     }
 
     /**
@@ -284,7 +252,9 @@ class Imagine
      */
     public function getDistHeight()
     {
-        return $this->thumbHeight;
+        $size = $this->calculDistSizeFromThumbSize();
+
+        return $size[1];
     }
 
     /**
@@ -332,6 +302,10 @@ class Imagine
      */
     public function getDistExtension()
     {
+        if (empty($this->distExtension)) {
+            return $this->srcExtension;
+        }
+
         return $this->distExtension;
     }
 
@@ -370,6 +344,10 @@ class Imagine
      */
     public function getDistDPI()
     {
+        if (empty($this->distDPI[0]) || empty($this->distDPI[1])) {
+            return $this->srcDPI;
+        }
+
         return $this->distDPI;
     }
 
@@ -501,12 +479,10 @@ class Imagine
             return true;
         } elseif ($background === 'currentColor' || $background === 'currentcolor') {
             try {
-                $image = !empty($this->src) ? $this->src : null;
+                $image = $this->src;
 
                 if (empty($image)) {
-                    if ($this->isDebug) {
-                        throw new \Exception('There was an error when filling in the background color');
-                    }
+                    throw new \Exception('There was an error when filling in the background color');
                     return false;
                 }
 
@@ -659,66 +635,29 @@ class Imagine
         return $this->isOverride;
     }
 
-    /**
-     * The path of destination image, null return the raw image stream directly
-     *
-     * @param string|null $destination Destination path
-     *
-     * @return boolean
-     */
-    public function setDestination($destination = null)
+    public function save(string $destination = '', bool $destroySrcGD = true, bool $destroyDistGD = true)
     {
-        if (is_string($destination)) {
-            if (!is_dir($destination)) {
-                return false;
-            }
-
-            $this->distPath = $destination;
-
-            return true;
+        if (empty($destination)) {
+            throw new \Exception('The destination path does not exist');
+            return false;
         }
 
-        if (is_null($destination)) {
-            $this->distPath = null;
-
-            return true;
+        if (!is_dir(dirname($destination))) {
+            throw new \Exception('The destination path does not exist');
+            return false;
         }
 
-        return false;
+        if (file_exists($destination) && !$this->isOverride) {
+            throw new \Exception('File rewriting is disabled');
+            return false;
+        }
+
+        return $this->render($destination, $destroySrcGD, $destroyDistGD);
     }
 
-    /**
-     * Get the path of destination image, null return the raw image stream directly
-     *
-     * @return void
-     */
-    public function getDestination()
+    public function displayOnBrowser(bool $destroySrcGD = true, bool $destroyDistGD = true)
     {
-        return $this->distPath;
-    }
-
-    /**
-     * Display or not PHP error
-     *
-     * @param bool $isDebug Is debug
-     *
-     * @return boolean
-     */
-    public function setIsDebug(bool $isDebug = false)
-    {
-        $this->isDebug = $isDebug;
-
-        return $this->isDebug;
-    }
-
-    /**
-     * Get if debug is activate or not
-     *
-     * @return boolean
-     */
-    public function getIsDebug()
-    {
-        return $this->isDebug;
+        return $this->render(null, $destroySrcGD, $destroyDistGD);
     }
 
     /**
@@ -726,53 +665,19 @@ class Imagine
      *
      * @return string|bool Returns the name of the file, otherwise it returns false
      */
-    public function render()
+    private function render($destination = '', bool $destroySrcGD = true, bool $destroyDistGD = true)
     {
-        if (!is_file($this->srcPath)) {
-            if ($this->isDebug) {
-                throw new \Exception('The source image not exist');
-            }
-            return false;
-        }
+        $size = $this->calculDistSizeFromThumbSize();
 
-        if (is_string($this->distPath)) {
-            if (empty($this->distPath)) {
-                if ($this->isDebug) {
-                    throw new \Exception('The destination path does not exist');
-                }
-                return false;
-            }
+        $this->thumbWidth = $size[0];
+        $this->thumbHeight = $size[1];
+        $this->distWidth = $size[2];
+        $this->distHeight = $size[3];
 
-            if (empty($this->name)) {
-                if ($this->isDebug) {
-                    throw new \Exception('Image name not register');
-                }
-                return false;
-            }
-        }
-
-        if (!is_int($this->srcWidth) || !is_int($this->srcHeight)) {
-            if ($this->isDebug) {
-                throw new \Exception('Bug with source image sizes');
-            }
-            return false;
-        }
-
-        // If source image is not create
-        if (empty($this->src)) {
-            if ($this->isDebug) {
-                throw new \Exception('Can\'t create the source image from the path');
-            }
-            return false;
-        }
-
-        $this->calculDistSizeFromThumbSize();
-        $this->dist = @imagecreatetruecolor($this->thumbWidth, $this->thumbHeight);
+        $this->dist = imagecreatetruecolor($this->thumbWidth, $this->thumbHeight);
 
         if (empty($this->dist)) {
-            if ($this->isDebug) {
-                throw new \Exception('There is a problem when processing the destination file');
-            }
+            throw new \Exception('There is a problem when processing the destination file');
             return false;
         }
 
@@ -780,12 +685,10 @@ class Imagine
             $this->distDPI = $this->srcDPI;
         }
 
-        $dpi = @imageresolution($this->dist, $this->distDPI[0], $this->distDPI[1]);
+        $dpi = imageresolution($this->dist, $this->distDPI[0], $this->distDPI[1]);
 
         if (empty($dpi)) {
-            if ($this->isDebug) {
-                throw new \Exception('There is a problem when processing the destination file');
-            }
+            throw new \Exception('There is a problem when processing the destination file');
             return false;
         }
 
@@ -809,17 +712,16 @@ class Imagine
             imagefill($this->dist, 0, 0, $transparency);
             imagesavealpha($this->dist, true);
 
-            $greenScreen = imagecolorallocate($this->dist, 0, 255, 0);
-            imagefilledrectangle($this->dist, 0, 0, 0, 0, $greenScreen);
+            $bgColor = imagecolorallocate($this->dist, 0, 255, 0);
+            imagefilledrectangle($this->dist, 0, 0, 0, 0, $bgColor);
         } else {
-            $color = imagecolorallocate(
+            $bgColor = imagecolorallocate(
                 $this->dist,
                 $this->background['r'],
                 $this->background['g'],
                 $this->background['b']
             );
-            imagefilledrectangle($this->dist, 0, 0, $this->thumbWidth, $this->thumbHeight, $color);
-            unset($color);
+            imagefilledrectangle($this->dist, 0, 0, $this->thumbWidth, $this->thumbHeight, $bgColor);
         }
 
         // Copy the source image to the destination image
@@ -860,10 +762,8 @@ class Imagine
         );
 
         if (!$isSampled) {
-            if ($this->isDebug) {
-                throw new \Exception('Can\'t create the temp destination image');
-            }
             $this->destroyTempImg();
+            throw new \Exception('Can\'t create the temp destination image');
             return false;
         }
 
@@ -878,13 +778,13 @@ class Imagine
             if ($filter === 'blur') {
                 for ($i = 0; $i < $value; $i++) {
                     $check = imagefilter($this->dist, $filterConstant);
-                    if (!$check && $this->isDebug) {
+                    if (!$check) {
                         throw new \Exception('Can\'t apply filter ' . $filter);
                     }
                 }
             } else {
                 $check = imagefilter($this->dist, $filterConstant);
-                if (!$check && $this->isDebug) {
+                if (!$check) {
                     throw new \Exception('Can\'t apply filter ' . $filter);
                 }
             }
@@ -895,27 +795,14 @@ class Imagine
             $this->distExtension = $this->srcExtension;
         }
 
-        $distPath = $this->distPath;
-        $distName = $this->name . '.' . $this->distExtension;
-
-        if (is_string($this->distPath) && !empty($this->distPath)) {
-            $distPath = rtrim($this->distPath, DIRECTORY_SEPARATOR) . DIRECTORY_SEPARATOR . $distName;
-
-            // Stop the process if the file exists and the override is disabled
-            if (file_exists($distPath) && !$this->isOverride) {
-                $this->destroyTempImg();
-                return false;
-            }
-        }
-
         $isCreate = false;
 
         if ($this->distExtension === 'jpg' || $this->distExtension === 'jpeg') {
-            $isCreate = imagejpeg($this->dist, $distPath, $this->quality);
+            $isCreate = imagejpeg($this->dist, $destination, $this->quality);
         } elseif ($this->distExtension === 'png') {
-            $isCreate = imagepng($this->dist, $distPath, ($this->quality * 9) / 100);
+            $isCreate = imagepng($this->dist, $destination, ($this->quality * 9) / 100);
         } elseif ($this->distExtension === 'gif') {
-            $isCreate = imagegif($this->dist, $distPath, $this->quality);
+            $isCreate = imagegif($this->dist, $destination, $this->quality);
         } else {
             $this->destroyTempImg();
             return false;
@@ -924,17 +811,11 @@ class Imagine
         $this->destroyTempImg();
 
         if (!$isCreate) {
-            if ($this->isDebug) {
-                throw new \Exception('Can\'t create destination image');
-            }
+            throw new \Exception('Can\'t create destination image');
             return false;
         }
 
-        if ($isCreate) {
-            return $distName;
-        } else {
-            return false;
-        }
+        return true;
     }
 
     /**
@@ -944,52 +825,57 @@ class Imagine
      */
     private function calculDistSizeFromThumbSize()
     {
+        $thumbWidth = $this->thumbWidth;
+        $thumbHeight = $this->thumbHeight;
+        $distWidth = $this->distWidth;
+        $distHeight = $this->distHeight;
+
         // On vérifit si c'est un redimmenssionnement
-        if ($this->thumbWidth > 0 xor $this->thumbHeight > 0) {
+        if ($thumbWidth > 0 xor $thumbHeight > 0) {
             // On enregistre la taille une fois redimmenssionné
-            if ($this->thumbWidth) {
-                $this->thumbHeight = $this->srcHeight * ($this->thumbWidth / $this->srcWidth);
+            if ($thumbWidth) {
+                $thumbHeight = $this->srcHeight * ($thumbWidth / $this->srcWidth);
             } else {
-                $this->thumbWidth = $this->srcWidth * ($this->thumbHeight / $this->srcHeight);
+                $thumbWidth = $this->srcWidth * ($thumbHeight / $this->srcHeight);
             }
 
-            $this->distWidth = $this->thumbWidth;
-            $this->distHeight = $this->thumbHeight;
-        } elseif ($this->thumbWidth > 0 && $this->thumbHeight > 0) {
+            $distWidth = $thumbWidth;
+            $distHeight = $thumbHeight;
+        } elseif ($thumbWidth > 0 && $thumbHeight > 0) {
             // On vérifit si c'est une vignette
 
             if ($this->fit === 'stretch') {
-                $this->distWidth = $this->thumbWidth;
-                $this->distHeight = $this->thumbHeight;
+                $distWidth = $thumbWidth;
+                $distHeight = $thumbHeight;
             } elseif ($this->fit === 'contain' || $this->fit === 'cover') {
                 $fitAllowed = array(
                     'contain' => array(
-                        $this->thumbWidth > $this->thumbHeight &&
+                        $thumbWidth > $thumbHeight &&
                         $this->srcWidth > $this->srcHeight &&
-                        ($this->srcWidth * $this->thumbHeight) / $this->srcHeight < $this->thumbWidth
+                        ($this->srcWidth * $thumbHeight) / $this->srcHeight < $thumbWidth
                             ? true
                             : false,
-                        $this->thumbWidth > $this->thumbHeight && $this->srcWidth <= $this->srcHeight ? true : false,
-                        $this->thumbWidth <= $this->thumbHeight &&
+                        $thumbWidth > $thumbHeight && $this->srcWidth <= $this->srcHeight ? true : false,
+                        $thumbWidth <= $thumbHeight &&
                         $this->srcWidth < $this->srcHeight &&
-                        ($this->srcWidth * $this->thumbHeight) / $this->srcHeight < $this->thumbWidth
+                        ($this->srcWidth * $thumbHeight) / $this->srcHeight < $thumbWidth
                             ? true
                             : false,
-                        $this->thumbWidth === $this->thumbHeight && $this->srcWidth === $this->srcHeight ? true : false
+                        $thumbWidth === $thumbHeight && $this->srcWidth === $this->srcHeight ? true : false
                     ),
                     'cover' => array(
-                        $this->thumbWidth > $this->thumbHeight &&
+                        $thumbWidth > $thumbHeight &&
                         $this->srcWidth > $this->srcHeight &&
-                        ($this->srcWidth * $this->thumbHeight) / $this->srcHeight > $this->thumbWidth
+                        ($this->srcWidth * $thumbHeight) / $this->srcHeight > $thumbWidth
                             ? true
                             : false,
-                        $this->thumbWidth <= $this->thumbHeight && $this->srcWidth > $this->srcHeight ? true : false,
-                        $this->thumbWidth < $this->thumbHeight &&
+                        $thumbWidth <= $thumbHeight && $this->srcWidth > $this->srcHeight ? true : false,
+                        $thumbWidth < $thumbHeight &&
                         $this->srcWidth <= $this->srcHeight &&
-                        ($this->srcWidth * $this->thumbHeight) / $this->srcHeight > $this->thumbWidth
+                        ($this->srcWidth * $thumbHeight) / $this->srcHeight > $thumbWidth
                             ? true
                             : false,
-                        $this->thumbWidth === $this->thumbHeight && $this->srcWidth === $this->srcHeight ? true : false
+                        $thumbWidth === $thumbHeight && $this->srcWidth === $this->srcHeight ? true : false
                     )
                 );
 
@@ -999,22 +885,29 @@ class Imagine
                     (in_array(true, $fitAllowed['cover']) && $this->fit === 'cover')
                 ) {
                     // On redimmensionne 'img' d'abord par sa largeur
-                    $this->distWidth = ($this->srcWidth * $this->thumbHeight) / $this->srcHeight;
-                    $this->distHeight = ($this->srcHeight * $this->distWidth) / $this->srcWidth;
+                    $distWidth = ($this->srcWidth * $thumbHeight) / $this->srcHeight;
+                    $distHeight = ($this->srcHeight * $distWidth) / $this->srcWidth;
                 } else {
                     // Si c'est le cas 2
 
                     // On redimmensionne 'img' d'abord par sa hauteur
-                    $this->distHeight = ($this->srcHeight * $this->thumbWidth) / $this->srcWidth;
-                    $this->distWidth = ($this->srcWidth * $this->distHeight) / $this->srcHeight;
+                    $distHeight = ($this->srcHeight * $thumbWidth) / $this->srcWidth;
+                    $distWidth = ($this->srcWidth * $distHeight) / $this->srcHeight;
                 }
             }
         } else {
             // Sinon on donne les même dimension que l'image original
 
-            $this->distWidth = $this->thumbWidth = $this->srcWidth;
-            $this->distHeight = $this->thumbHeight = $this->srcHeight;
+            $distWidth = $thumbWidth = $this->srcWidth;
+            $distHeight = $thumbHeight = $this->srcHeight;
         }
+
+        return array(
+            $thumbWidth,
+            $thumbHeight,
+            $distWidth,
+            $distHeight,
+        );
     }
 
     /**

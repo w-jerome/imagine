@@ -8,8 +8,6 @@
 
 namespace Imagine;
 
-use phpDocumentor\Reflection\Types\Boolean;
-
 class Imagine
 {
     private $src = null;
@@ -17,12 +15,12 @@ class Imagine
     private $srcWidth = 0;
     private $srcHeight = 0;
     private $srcMime = '';
-    private $srcExtension = '';
+    private $srcType = '';
     private $srcDPI = array(0, 0);
     private $dist = null;
     private $distWidth = 0;
     private $distHeight = 0;
-    private $distExtension = '';
+    private $distType = '';
     private $distDPI = array(0, 0);
     private $thumbWidth = 0;
     private $thumbHeight = 0;
@@ -82,7 +80,7 @@ class Imagine
         }
 
         $this->setSrcSize();
-        $this->setSrcExtension();
+        $this->setSrcType();
         $this->setSrcDPI();
 
         return $this;
@@ -141,27 +139,27 @@ class Imagine
      *
      * @return void
      */
-    private function setSrcExtension()
+    private function setSrcType()
     {
         if ($this->srcMime === 'image/jpeg') {
             $extension = pathinfo($this->srcPath, PATHINFO_EXTENSION);
 
             if (!empty($extension) && $extension === 'jpeg') {
-                $this->srcExtension = $extension; // It can be "jpeg"... Honestly
+                $this->srcType = $extension; // It can be "jpeg"... Honestly
             } else {
-                $this->srcExtension = 'jpg';
+                $this->srcType = 'jpg';
             }
         } elseif ($this->srcMime === 'image/png') {
-            $this->srcExtension = 'png';
+            $this->srcType = 'png';
         } elseif ($this->srcMime === 'image/gif') {
-            $this->srcExtension = 'gif';
+            $this->srcType = 'gif';
         }
     }
 
     /**
      * Set source image DPI
      *
-     * @return boolean
+     * @return bool
      */
     private function setSrcDPI()
     {
@@ -274,13 +272,13 @@ class Imagine
      *
      * @return void
      */
-    public function setExtension(string $extension = '')
+    public function setType(string $extension = '')
     {
         if (!in_array($extension, self::TYPES_ALLOWED)) {
             return false;
         }
 
-        $this->distExtension = $extension;
+        $this->distType = $extension;
 
         return true;
     }
@@ -290,9 +288,9 @@ class Imagine
      *
      * @return string
      */
-    public function getSrcExtension()
+    public function getSrcType()
     {
-        return $this->srcExtension;
+        return $this->srcType;
     }
 
     /**
@@ -300,13 +298,13 @@ class Imagine
      *
      * @return string
      */
-    public function getDistExtension()
+    public function getDistType()
     {
-        if (empty($this->distExtension)) {
-            return $this->srcExtension;
+        if (empty($this->distType)) {
+            return $this->srcType;
         }
 
-        return $this->distExtension;
+        return $this->distType;
     }
 
     /**
@@ -317,14 +315,12 @@ class Imagine
      *
      * @return int
      */
-    public function setDPI(int $dpiX = 72, int $dpiY = 72)
+    public function setDPI(int $dpiX = 0, int $dpiY = 0)
     {
         $dpiX = ($dpiX <= 0) ? 72 : $dpiX;
-        $dpiY = ($dpiY <= 0) ? 72 : $dpiY;
+        $dpiY = ($dpiY <= 0) ? $dpiX : $dpiY;
 
-        $this->distDPI = array($dpiX, $dpiY);
-
-        return $this->distDPI;
+        return $this->distDPI = array($dpiX, $dpiY);
     }
 
     /**
@@ -386,7 +382,7 @@ class Imagine
      *
      * @param string $fit Destination file fit type
      *
-     * @return boolean
+     * @return bool
      */
     public function setFit(string $fit = '')
     {
@@ -415,7 +411,7 @@ class Imagine
      * @param 'left'|'center'|'right' $x Destination file x position
      * @param 'top'|'center'|'bottom' $y Destination file y position
      *
-     * @return boolean
+     * @return bool
      */
     public function setPosition(string $x = 'center', string $y = 'center')
     {
@@ -446,7 +442,7 @@ class Imagine
      *
      * @param string|array $background Background color
      *
-     * @return boolean
+     * @return bool
      */
     public function setBackground($background = null)
     {
@@ -574,13 +570,11 @@ class Imagine
      * @param string $filter Filter type
      * @param int $value Filter value in percent
      *
-     * @return boolean
+     * @return bool
      */
     public function addFilter(string $filter = '', int $value = 100)
     {
-        $allowed = array('negate', 'grayscale', 'edgedetect', 'emboss', 'mean_removal', 'blur');
-
-        if (!in_array($filter, $allowed)) {
+        if (!in_array($filter, array_keys(self::FILTERS_ALLOWED))) {
             return false;
         }
 
@@ -590,13 +584,10 @@ class Imagine
             $value = 100;
         }
 
-        if ($filter === 'blur') {
-            if ($value >= 100) {
-                $value = 10;
-            }
-        }
-
-        $this->filters[] = array($filter => $value);
+        $this->filters[] = array(
+            'type' => $filter,
+            'value' => $value,
+        );
 
         return true;
     }
@@ -616,7 +607,7 @@ class Imagine
      *
      * @param bool $isOverride Is override
      *
-     * @return boolean
+     * @return bool
      */
     public function setIsOverride(bool $isOverride = true)
     {
@@ -628,7 +619,7 @@ class Imagine
     /**
      * Get override
      *
-     * @return boolean
+     * @return bool
      */
     public function getIsOverride()
     {
@@ -693,7 +684,7 @@ class Imagine
         }
 
         // If destination image is "jpg", force no transparent background
-        if ($this->distExtension === 'jpg' || $this->distExtension === 'jpeg') {
+        if ($this->distType === 'jpg' || $this->distType === 'jpeg') {
             $this->background['a'] = 1;
         }
 
@@ -711,9 +702,6 @@ class Imagine
 
             imagefill($this->dist, 0, 0, $transparency);
             imagesavealpha($this->dist, true);
-
-            $bgColor = imagecolorallocate($this->dist, 0, 255, 0);
-            imagefilledrectangle($this->dist, 0, 0, 0, 0, $bgColor);
         } else {
             $bgColor = imagecolorallocate(
                 $this->dist,
@@ -722,7 +710,9 @@ class Imagine
                 $this->background['b']
             );
             imagefilledrectangle($this->dist, 0, 0, $this->thumbWidth, $this->thumbHeight, $bgColor);
+            unset($bgColor);
         }
+        // unset($bgColor);
 
         // Copy the source image to the destination image
         $position = array(0, 0); // x, y
@@ -768,40 +758,40 @@ class Imagine
         }
 
         // Apply the filters
-        foreach ($this->filters as $filter => $value) {
-            if (!in_array($filter, self::FILTERS_ALLOWED)) {
+        foreach ($this->filters as $filter) {
+            if (!in_array($filter['type'], self::FILTERS_ALLOWED)) {
                 continue;
             }
 
-            $filterConstant = self::FILTERS_ALLOWED[$filter];
+            $filterConstant = self::FILTERS_ALLOWED[$filter['type']];
 
-            if ($filter === 'blur') {
-                for ($i = 0; $i < $value; $i++) {
+            if ($filter['type'] === 'blur') {
+                for ($i = 0; $i < $filter['value']; $i++) {
                     $check = imagefilter($this->dist, $filterConstant);
                     if (!$check) {
-                        throw new \Exception('Can\'t apply filter ' . $filter);
+                        throw new \Exception('Can\'t apply filter ' . $filter['type']);
                     }
                 }
             } else {
                 $check = imagefilter($this->dist, $filterConstant);
                 if (!$check) {
-                    throw new \Exception('Can\'t apply filter ' . $filter);
+                    throw new \Exception('Can\'t apply filter ' . $filter['type']);
                 }
             }
         }
 
         // Set the final extension if there is no conversion done on the file
-        if (empty($this->distExtension)) {
-            $this->distExtension = $this->srcExtension;
+        if (empty($this->distType)) {
+            $this->distType = $this->srcType;
         }
 
         $isCreate = false;
 
-        if ($this->distExtension === 'jpg' || $this->distExtension === 'jpeg') {
+        if ($this->distType === 'jpg' || $this->distType === 'jpeg') {
             $isCreate = imagejpeg($this->dist, $destination, $this->quality);
-        } elseif ($this->distExtension === 'png') {
+        } elseif ($this->distType === 'png') {
             $isCreate = imagepng($this->dist, $destination, ($this->quality * 9) / 100);
-        } elseif ($this->distExtension === 'gif') {
+        } elseif ($this->distType === 'gif') {
             $isCreate = imagegif($this->dist, $destination, $this->quality);
         } else {
             $this->destroyTempImg();

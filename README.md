@@ -13,42 +13,52 @@ composer require imagine/imagine
 ```php
 use Imagine\Imagine;
 
-$image = new Imagine($_FILES['image']['tmp_name']); // string: path of image
-$image->setName('thumbnail_200-290');               // string: name of image
-$image->setWidth(200);                              // int: width of new image
-$image->setHeight(290);                             // int: height of new image
-$image->setExtension('png');                             // string: ('jpg', 'png') convert new image to new extension
-$image->setDPI(72, 72);                             // int: (72, 72) convert image resolution in X and Y
-$image->setQuality(90);                             // int: quality in percent of new image
-$image->setFit('cover');                            // string: ('stretch', 'cover', 'contain') how the new image is processed for a thumbnail
-$image->setPosition('center', 'center');            // string: ('left', 'top') ('center', 'bottom') ('right', 'center') ('right', 'top') where the new image is placed
-$image->setBackground('currentColor');              // string/array: ('ffffff', '#000000', 'faa', 'currentColor', array("r" => 255, "g" => 255, "b" => 255, "a" => 1)) the background color of the image, "currentColor" uses the main color of the image, The array manage the alpha channel
-$image->addFilter('grayscale');                     // string: ('negate', 'grayscale', 'edgedetect', 'emboss', 'mean_removal', 'blur') apply filtres to new image
-$image->setIsOverride(false);                         // bolean: override or not destination file
-$image->setDestination('./uploads/');               // string/null: the path of new image, null return the raw image stream directly
-$image->setIsDebug(false);                            // boolean: return php error
+try {
+  $image = new Imagine($_FILES['image']['tmp_name']);
+  $image->setWidth(200);
+  $image->setHeight(290);
 
-$imageName = $image->render(); // make new image and return the new image name with extension or return false
-
-if ($imageName) {
-  var_dump($imageName); // "thumbnail_200-290.png"
-} else {
-  var_dump($imageName); // false
+  if ($image->save('./uploads/')) {
+    // true
+  } else {
+    // false
+  }
+} catch (Exception $e) {
+  echo 'Exception reçue : ',  $e->getMessage(), "\n";
 }
 ```
 
 ### Functions
 
 ```php
-$image = new Imagine('./my-picture.jpg');
-$image->setBackground('currentColor');
+// File upload
+$image = new Imagine($_FILES['image']['tmp_name']);
 
-$image->getName();
+// Or a file in a folder
+$image = new Imagine('./my-picture.jpg');
+
+// Setter
+$image->setWidth(200);
+$image->setHeight(290);
+$image->setType('png');
+$image->setDPI(72);
+$image->setQuality(90);
+$image->setFit('cover');
+$image->setPosition('center', 'center');
+$image->setBackground('currentColor');
+$image->addFilter('grayscale');
+$image->setIsOverride(false);
+
+// Getter
 $image->getSrcWidth();
 $image->getSrcHeight();
 $image->getSrcMime();
-$image->getSrcExtension();
+$image->getSrcType();
 $image->getSrcDPI();
+$image->getDistWidth();
+$image->getDistHeight();
+$image->getDistType();
+$image->getDistDPI();
 $image->getQuality();
 $image->getFit();
 $image->getPosition();
@@ -57,12 +67,185 @@ $image->getBackgroundToHexa();
 $image->getFilters();
 $image->getIsOverride();
 $image->getDestination();
-$image->getIsDebug();
 
-if ($image->render()) {
-  $image->getDistWidth();
-  $image->getDistHeight();
-  $image->getDistExtension();
-  $image->getDistDPI();
-}
+// Save file
+$image->save('./uploads/');
+
+// Or render in browser
+header('Content-type:image/png');
+$image->displayOnBrowser();
 ```
+
+## Examples
+
+### Resize width
+
+```php
+$image = new Imagine('./tests/assets/file-valid.jpg');
+$image->setWidth(300);
+$image->save('./doc/img/example-01.jpg');
+```
+
+![example 01](/doc/img/example-01.jpg)
+
+### Resize height
+
+```php
+$image = new Imagine('./tests/assets/file-valid.jpg');
+$image->setHeight(300);
+$image->save('./doc/img/example-02.jpg');
+```
+
+![example 02](/doc/img/example-02.jpg)
+
+### Create thumbnail fit "stretch"
+
+```php
+$image = new Imagine('./tests/assets/file-valid.jpg');
+$image->setWidth(300);
+$image->setHeight(300);
+$image->save('./doc/img/example-03.jpg');
+```
+
+![example 03](/doc/img/example-03.jpg)
+
+### Create thumbnail fit "contain"
+
+```php
+$image = new Imagine('./tests/assets/file-valid.jpg');
+$image->setWidth(300);
+$image->setHeight(300);
+$image->setFit('contain');
+$image->save('./doc/img/example-04.jpg');
+```
+
+![example 04](/doc/img/example-04.jpg)
+
+### Create thumbnail fit "cover"
+
+```php
+$image = new Imagine('./tests/assets/file-valid.jpg');
+$image->setWidth(300);
+$image->setHeight(300);
+$image->setFit('cover');
+$image->save('./doc/img/example-05.jpg');
+```
+
+![example 05](/doc/img/example-05.jpg)
+
+### Background color transparent
+
+```php
+$image = new Imagine('./tests/assets/file-transparent.png');
+$image->setWidth(300);
+$image->setHeight(300);
+$image->setFit('contain');
+$image->setBackground('transparent');
+$image->save('./doc/img/example-06.png');
+```
+
+![example 06](/doc/img/example-06.png)
+
+### Background color main color
+
+```php
+$image = new Imagine('./tests/assets/file-valid.jpg');
+$image->setWidth(300);
+$image->setHeight(300);
+$image->setFit('contain');
+$image->setBackground('currentColor');
+$image->save('./doc/img/example-07.jpg');
+```
+
+![example 07](/doc/img/example-07.jpg)
+
+### Background color with array
+
+```php
+$image = new Imagine('./tests/assets/file-transparent.png');
+$image->setWidth(300);
+$image->setHeight(300);
+$image->setFit('contain');
+$image->setBackground(array(
+  'r' => 255,
+  'g' => 0,
+  'b' => 0,
+  'a' => 1,
+));
+$image->setType('jpg');
+$image->save('./doc/img/example-08.jpg');
+```
+
+![example 08](/doc/img/example-08.jpg)
+
+### Background color with hexa
+
+```php
+$image = new Imagine('./tests/assets/file-transparent.png');
+$image->setWidth(300);
+$image->setHeight(300);
+$image->setFit('contain');
+$image->setBackground('#ffaaff');
+$image->setType('jpg');
+$image->save('./doc/img/example-09.jpg');
+```
+
+![example 09](/doc/img/example-09.jpg)
+
+### Image position in thumbnail
+
+```php
+$image = new Imagine('./tests/assets/file-valid.jpg');
+$image->setWidth(300);
+$image->setHeight(300);
+$image->setFit('contain');
+$image->setPosition('left', 'top');
+$image->save('./doc/img/example-10.jpg');
+```
+
+![example 10](/doc/img/example-10.jpg)
+
+### Quality
+
+```php
+$image = new Imagine('./tests/assets/file-valid.jpg');
+$image->setWidth(300);
+$image->setQuality(50); // percent
+$image->save('./doc/img/example-11.jpg');
+```
+
+![example 11](/doc/img/example-11.jpg)
+
+### Convert MIME file
+
+```php
+$image = new Imagine('./tests/assets/file-transparent.png');
+$image->setWidth(300);
+$image->setType('jpg'); // 'jpg'|'png'
+$image->save('./doc/img/example-12.jpg');
+```
+
+![example 12](/doc/img/example-12.jpg)
+
+### Add grayscale filter
+
+```php
+$image = new Imagine('./tests/assets/file-valid.jpg');
+$image->setWidth(300);
+$image->addFilter('grayscale'); // 'negate'|'grayscale'|'edgedetect'|'emboss'|'mean_removal'|'blur'
+$image->save('./doc/img/example-13.jpg');
+```
+
+![example 13](/doc/img/example-13.jpg)
+
+### Add grayscale and blur filter
+
+```php
+$image = new Imagine('./tests/assets/file-valid.jpg');
+$image->setWidth(300);
+$image->addFilter('grayscale');
+$image->addFilter('blur', 3); // For the 'blur' filter we choose the number of passes
+$image->save('./doc/img/example-14.jpg');
+```
+
+![example 14](/doc/img/example-14.jpg)

@@ -7,11 +7,11 @@ use Imagine\Imagine;
 
 final class ImagineConstructorTest extends TestCase
 {
-    private $fileValid = './tests/assets/example-valid.jpg';
+    private $fileValid = './tests/assets/file-valid.jpg';
 
-    private $fileNotExist = './tests/assets/example-no-exist.jpg';
+    private $fileNotExist = './tests/assets/file-no-exist.jpg';
 
-    private $fileCorrupted = './tests/assets/example-corrupted.jpg';
+    private $fileCorrupted = './tests/assets/file-corrupted.jpg';
 
     /**
      *

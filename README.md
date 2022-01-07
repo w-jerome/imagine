@@ -229,6 +229,8 @@ $image->save('./doc/img/example-12.jpg');
 
 ### Add grayscale filter
 
+[The list of available filters](https://www.php.net/manual/function.imagefilter.php)
+
 ```php
 $image = new Imagine('./tests/assets/file-valid.jpg');
 $image->setWidth(300);

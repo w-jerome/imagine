@@ -18,7 +18,7 @@ try {
   $image->setWidth(200);
   $image->setHeight(290);
 
-  if ($image->save('./uploads/')) {
+  if ($image->save('./uploads/my-image.jpg')) {
     // true
   } else {
     // false
@@ -69,7 +69,7 @@ $image->getIsOverride();
 $image->getDestination();
 
 // Save file
-$image->save('./uploads/');
+$image->save('./uploads/my-image.jpg');
 
 // Or render in browser
 header('Content-type:image/png');

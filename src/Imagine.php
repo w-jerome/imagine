@@ -41,14 +41,6 @@ class Imagine
         'contain',
         'cover',
     );
-    private const FILTERS_ALLOWED = array(
-        'negate' => IMG_FILTER_NEGATE,
-        'grayscale' => IMG_FILTER_GRAYSCALE,
-        'edgedetect' => IMG_FILTER_EDGEDETECT,
-        'emboss' => IMG_FILTER_EMBOSS,
-        'mean_removal' => IMG_FILTER_MEAN_REMOVAL,
-        'blur' => IMG_FILTER_GAUSSIAN_BLUR,
-    );
 
     /**
      * Adds the file to be processed
@@ -567,27 +559,26 @@ class Imagine
     /**
      * Adds filters to the image, you can add several filters
      *
-     * @param string $filter Filter type
+     * @param int $filterConstant Filter contant
      * @param int $value Filter value in percent
      *
      * @return bool
      */
-    public function addFilter(string $filter = '', int $value = 100)
+    public function addFilter(int $filterConstant = -1, $params = null)
     {
-        if (!in_array($filter, array_keys(self::FILTERS_ALLOWED))) {
+        if (is_int($filterConstant) && $filterConstant === -1) {
             return false;
         }
 
-        if ($value <= 0) {
-            $value = 0;
-        } elseif ($value >= 100) {
-            $value = 100;
+        $filter = array(
+            'type' => $filterConstant,
+        );
+
+        if (!is_null($params)) {
+            $filter['params'] = $params;
         }
 
-        $this->filters[] = array(
-            'type' => $filter,
-            'value' => $value,
-        );
+        $this->filters[] = $filter;
 
         return true;
     }
@@ -759,24 +750,16 @@ class Imagine
 
         // Apply the filters
         foreach ($this->filters as $filter) {
-            if (!in_array($filter['type'], self::FILTERS_ALLOWED)) {
-                continue;
+            $check = true;
+
+            if (isset($filter['params'])) {
+                $check = imagefilter($this->dist, $filter['type'], $filter['params']);
+            } else {
+                $check = imagefilter($this->dist, $filter['type']);
             }
 
-            $filterConstant = self::FILTERS_ALLOWED[$filter['type']];
-
-            if ($filter['type'] === 'blur') {
-                for ($i = 0; $i < $filter['value']; $i++) {
-                    $check = imagefilter($this->dist, $filterConstant);
-                    if (!$check) {
-                        throw new \Exception('Can\'t apply filter ' . $filter['type']);
-                    }
-                }
-            } else {
-                $check = imagefilter($this->dist, $filterConstant);
-                if (!$check) {
-                    throw new \Exception('Can\'t apply filter ' . $filter['type']);
-                }
+            if (!$check) {
+                throw new \Exception('Can\'t apply filter ' . $filter['type']);
             }
         }
 

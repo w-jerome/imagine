@@ -232,7 +232,7 @@ $image->save('./doc/img/example-12.jpg');
 ```php
 $image = new Imagine('./tests/assets/file-valid.jpg');
 $image->setWidth(300);
-$image->addFilter('grayscale'); // 'negate'|'grayscale'|'edgedetect'|'emboss'|'mean_removal'|'blur'
+$image->addFilter(IMG_FILTER_GRAYSCALE);
 $image->save('./doc/img/example-13.jpg');
 ```
 
@@ -243,8 +243,10 @@ $image->save('./doc/img/example-13.jpg');
 ```php
 $image = new Imagine('./tests/assets/file-valid.jpg');
 $image->setWidth(300);
-$image->addFilter('grayscale');
-$image->addFilter('blur', 3); // For the 'blur' filter we choose the number of passes
+$image->addFilter(IMG_FILTER_GRAYSCALE);
+$image->addFilter(IMG_FILTER_GAUSSIAN_BLUR);
+$image->addFilter(IMG_FILTER_GAUSSIAN_BLUR); // More blur
+$image->addFilter(IMG_FILTER_GAUSSIAN_BLUR); // More more blur
 $image->save('./doc/img/example-14.jpg');
 ```
 

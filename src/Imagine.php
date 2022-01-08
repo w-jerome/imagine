@@ -8,6 +8,8 @@
 
 namespace Imagine;
 
+use phpDocumentor\Reflection\PseudoTypes\True_;
+
 class Imagine
 {
     private $src = null;
@@ -20,6 +22,7 @@ class Imagine
     private $dist = null;
     private $distWidth = 0;
     private $distHeight = 0;
+    private $distMime = '';
     private $distType = '';
     private $distDPI = array(0, 0);
     private $thumbWidth = 0;
@@ -43,10 +46,9 @@ class Imagine
     );
 
     /**
-     * Adds the file to be processed
+     * Save the path of the image to be processed
      *
-     * @param string $imgSrc Path of the file.
-     *
+     * @param string $imgSrc Le chemin de l'image source
      * @return Imagine
      */
     public function __construct(string $imgSrc = '')
@@ -79,25 +81,40 @@ class Imagine
     }
 
     /**
-     * Set source image mime
+     * Save the MIME of the source image
      *
-     * @return void
+     * @return boolean
      */
-    private function setSrcMime()
+    private function setSrcMime(): bool
     {
-        $finfo = finfo_open(FILEINFO_MIME_TYPE);
+        $info = finfo_open(FILEINFO_MIME_TYPE);
 
-        $this->srcMime = finfo_file($finfo, $this->srcPath);
+        if (!$info) {
+            throw new \Exception('There is a problem to get the information from the source image');
+            return false;
+        }
 
-        finfo_close($finfo);
+        $file = finfo_file($info, $this->srcPath);
+
+        if (!$file) {
+            finfo_close($info);
+            throw new \Exception('There is a problem to get the information from the source image');
+            return false;
+        }
+
+        $this->srcMime = $file;
+
+        finfo_close($info);
+
+        return true;
     }
 
     /**
-     * Set source image
+     * Save the source image as a GD resource
      *
-     * @return void
+     * @return boolean
      */
-    private function setSrc()
+    private function setSrc(): bool
     {
         if ($this->srcMime === 'image/jpeg') {
             $this->src = imagecreatefromjpeg($this->srcPath);
@@ -106,32 +123,41 @@ class Imagine
         } elseif ($this->srcMime === 'image/gif') {
             $this->src = imagecreatefromgif($this->srcPath);
         }
+
+        if (empty($this->src)) {
+            throw new \Exception('There is a problem to create the GD resource from the source image');
+            return false;
+        }
+
+        return true;
     }
 
     /**
-     * Set source image width and height
+     * Saves the size of the source image
      *
-     * @return void
+     * @return boolean
      */
-    private function setSrcSize()
+    private function setSrcSize(): bool
     {
         $info = getimagesize($this->srcPath);
 
         if (empty($info) || (!is_int($info[0]) || !is_int($info[1]))) {
-            throw new \Exception('Bug with source image sizes');
+            throw new \Exception('There is a problem to get the size of the source image');
             return false;
         }
 
         $this->srcWidth = $info[0];
         $this->srcHeight = $info[1];
+
+        return true;
     }
 
     /**
-     * Set source image extension
+     * Save the type of the source image
      *
-     * @return void
+     * @return boolean
      */
-    private function setSrcType()
+    private function setSrcType(): bool
     {
         if ($this->srcMime === 'image/jpeg') {
             $extension = pathinfo($this->srcPath, PATHINFO_EXTENSION);
@@ -146,14 +172,21 @@ class Imagine
         } elseif ($this->srcMime === 'image/gif') {
             $this->srcType = 'gif';
         }
+
+        if (empty($this->srcType)) {
+            throw new \Exception('There is a problem to get the type of the source image');
+            return false;
+        }
+
+        return true;
     }
 
     /**
-     * Set source image DPI
+     * Save the DPI of the source image
      *
-     * @return bool
+     * @return boolean
      */
-    private function setSrcDPI()
+    private function setSrcDPI(): bool
     {
         $dpi = imageresolution($this->src);
 
@@ -168,13 +201,12 @@ class Imagine
     }
 
     /**
-     * Set width
+     * Saves the width of the destination image
      *
-     * @param int $width Destination file width
-     *
-     * @return int
+     * @param integer $width The width of the destination image
+     * @return boolean
      */
-    public function setWidth(int $width = 0)
+    public function setWidth(int $width = 0): bool
     {
         if ($width <= 0) {
             $width = 0;
@@ -182,25 +214,25 @@ class Imagine
 
         $this->thumbWidth = $width;
 
-        return $this->thumbWidth;
+        return true;
     }
 
     /**
-     * Get image source width
+     * Returns the width of the source image
      *
-     * @return int
+     * @return integer
      */
-    public function getSrcWidth()
+    public function getSrcWidth(): int
     {
         return $this->srcWidth;
     }
 
     /**
-     * Get image destination width
+     * Returns the width of the destination image
      *
-     * @return int
+     * @return integer
      */
-    public function getDistWidth()
+    public function getDistWidth(): int
     {
         $size = $this->calculDistSizeFromThumbSize();
 
@@ -208,13 +240,12 @@ class Imagine
     }
 
     /**
-     * Set height
+     * Saves the height of the destination image
      *
-     * @param int $height Destination file height
-     *
-     * @return int
+     * @param integer $height The height of the destination image
+     * @return boolean
      */
-    public function setHeight(int $height = 0)
+    public function setHeight(int $height = 0): bool
     {
         if ($height <= 0) {
             $height = 0;
@@ -222,25 +253,25 @@ class Imagine
 
         $this->thumbHeight = $height;
 
-        return $this->thumbHeight;
+        return true;
     }
 
     /**
-     * Get image source height
+     * Returns the height of the destination image
      *
-     * @return int
+     * @return integer
      */
-    public function getSrcHeight()
+    public function getSrcHeight(): int
     {
         return $this->srcHeight;
     }
 
     /**
-     * Get image destination height
+     * Returns the height of the destination image
      *
-     * @return int
+     * @return integer
      */
-    public function getDistHeight()
+    public function getDistHeight(): int
     {
         $size = $this->calculDistSizeFromThumbSize();
 
@@ -248,49 +279,68 @@ class Imagine
     }
 
     /**
-     * Get source image mime
+     * Returns the MIME of the source image
      *
      * @return string
      */
-    public function getSrcMime()
+    public function getSrcMime(): string
     {
         return $this->srcMime;
     }
 
     /**
-     * Set new file type
+     * Returns the MIME of the destination image
      *
-     * @param string $extension Destination file type
-     *
-     * @return void
+     * @return string
      */
-    public function setType(string $extension = '')
+    public function getDistMime(): string
     {
-        if (!in_array($extension, self::TYPES_ALLOWED)) {
+        if (empty($this->distMime)) {
+            if ($this->distType === 'jpg' || $this->distType === 'jpeg') {
+                return 'image/jpeg';
+            } elseif ($this->distType === 'png') {
+                return 'image/png';
+            } elseif ($this->distType === 'gif') {
+                return 'image/gif';
+            }
+        }
+
+        return $this->distMime;
+    }
+
+    /**
+     * Convert the type of the destination image
+     *
+     * @param string $type The type of the destination image (jpg|jpeg|png|gif)
+     * @return boolean
+     */
+    public function setType(string $type = ''): bool
+    {
+        if (!in_array($type, self::TYPES_ALLOWED)) {
             return false;
         }
 
-        $this->distType = $extension;
+        $this->distType = $type;
 
         return true;
     }
 
     /**
-     * Get source file type
+     * Returns the type of the source image
      *
      * @return string
      */
-    public function getSrcType()
+    public function getSrcType(): string
     {
         return $this->srcType;
     }
 
     /**
-     * Get destination file type
+     * Returns the type of the destination image
      *
      * @return string
      */
-    public function getDistType()
+    public function getDistType(): string
     {
         if (empty($this->distType)) {
             return $this->srcType;
@@ -300,37 +350,38 @@ class Imagine
     }
 
     /**
-     * Set destination file DPI
+     * Saves the DPI of the destination image
      *
-     * @param int $dpiX Destination file DPI x
-     * @param int $dpiY Destination file DPI y
-     *
-     * @return int
+     * @param integer $dpiX DPI in width
+     * @param integer $dpiY DPI in height
+     * @return boolean
      */
-    public function setDPI(int $dpiX = 0, int $dpiY = 0)
+    public function setDPI(int $dpiX = 0, int $dpiY = 0): bool
     {
         $dpiX = ($dpiX <= 0) ? 72 : $dpiX;
         $dpiY = ($dpiY <= 0) ? $dpiX : $dpiY;
 
-        return $this->distDPI = array($dpiX, $dpiY);
+        $this->distDPI = array($dpiX, $dpiY);
+
+        return true;
     }
 
     /**
-     * Get source file DPI
+     * Returns the DPI of the source image
      *
      * @return array
      */
-    public function getSrcDPI()
+    public function getSrcDPI(): array
     {
         return $this->srcDPI;
     }
 
     /**
-     * Get destination file DPI
+     * Returns the DPI of the destination image
      *
-     * @return int
+     * @return array
      */
-    public function getDistDPI()
+    public function getDistDPI(): array
     {
         if (empty($this->distDPI[0]) || empty($this->distDPI[1])) {
             return $this->srcDPI;
@@ -340,13 +391,12 @@ class Imagine
     }
 
     /**
-     * Set quality
+     * Saves the quality of the image
      *
-     * @param int $quality Destination file quality in percent
-     *
-     * @return int
+     * @param integer $quality Quality applied in percentage
+     * @return boolean
      */
-    public function setQuality(int $quality = 100)
+    public function setQuality(int $quality = 100): bool
     {
         if ($quality < 0) {
             $quality = 0;
@@ -356,27 +406,26 @@ class Imagine
 
         $this->quality = $quality;
 
-        return $this->quality;
+        return true;
     }
 
     /**
-     * Get quality
+     * Returns the quality of the destination image in percent
      *
-     * @return int
+     * @return integer
      */
-    public function getQuality()
+    public function getQuality(): int
     {
         return $this->quality;
     }
 
     /**
-     * If the destination image is a thumbnail, make the image fit, crop or restrict to the edge of the image
+     * Saves the way to stretch the destination image in the thumbnail
      *
-     * @param string $fit Destination file fit type
-     *
-     * @return bool
+     * @param string $fit The way to stretch the image (stretch|contain|cover)
+     * @return boolean
      */
-    public function setFit(string $fit = '')
+    public function setFit(string $fit = ''): bool
     {
         if (!in_array($fit, self::FITS_ALLOWED)) {
             return false;
@@ -388,24 +437,23 @@ class Imagine
     }
 
     /**
-     * Get fit
+     * Returns the way to stretch the destination image
      *
      * @return string
      */
-    public function getFit()
+    public function getFit(): string
     {
         return $this->fit;
     }
 
     /**
-     * If the destination image is a thumbnail, choose where to display the image
+     * Saves the position of the destination image in the thumbnail
      *
-     * @param 'left'|'center'|'right' $x Destination file x position
-     * @param 'top'|'center'|'bottom' $y Destination file y position
-     *
-     * @return bool
+     * @param string $x The horizontal position (left|center|right)
+     * @param string $y The vertical position (top|center|bottom)
+     * @return boolean
      */
-    public function setPosition(string $x = 'center', string $y = 'center')
+    public function setPosition(string $x = 'center', string $y = 'center'): bool
     {
         $xAllowed = array('left', 'center', 'right');
         $yAllowed = array('top', 'center', 'bottom');
@@ -420,136 +468,154 @@ class Imagine
     }
 
     /**
-     * Get position
+     * Returns the position of the destination image in the thumbnail
      *
-     * @return string
+     * @return array
      */
-    public function getPosition()
+    public function getPosition(): array
     {
         return $this->position;
     }
 
     /**
-     * Set background color
+     * Saves the background color of the destination image with an "rgba" array
      *
-     * @param string|array $background Background color
-     *
-     * @return bool
+     * @param array $background Array in "rgba"
+     * @return boolean
      */
-    public function setBackground($background = null)
+    public function setBackgroundFromArray(array $background = array()): bool
     {
-        if (!is_string($background) && !is_array($background)) {
+        if (!is_array($background)) {
             return false;
         }
 
-        $bgDefault = array(
+        $bg = array_merge(array(
             'r' => 255,
             'g' => 255,
             'b' => 255,
             'a' => 1,
+        ), $background);
+
+        $this->background['r'] = $bg['r'] >= 0 && $bg['r'] <= 255 ? (int) $bg['r'] : 255;
+        $this->background['g'] = $bg['g'] >= 0 && $bg['g'] <= 255 ? (int) $bg['g'] : 255;
+        $this->background['b'] = $bg['b'] >= 0 && $bg['b'] <= 255 ? (int) $bg['b'] : 255;
+        $this->background['a'] = $bg['a'] >= 0 && $bg['a'] <= 1 ? (float) $bg['a'] : 1;
+
+        return true;
+    }
+
+    /**
+     * Saves the background color of the destination image with a hexadecimal code
+     *
+     * @param string $background Hexadecimal code
+     * @return boolean
+     */
+    public function setBackgroundFromHexa(string $background = ''): bool
+    {
+        if (!is_string($background)) {
+            return false;
+        }
+
+        $this->background = $this->getHexaToRGBA($background);
+
+        return true;
+    }
+
+    /**
+     * Saves the background color of the destination image as transparent
+     *
+     * @return boolean
+     */
+    public function setBackgroundTransparent(): bool
+    {
+        $this->background = array(
+            'r' => 255,
+            'g' => 255,
+            'b' => 255,
+            'a' => 0,
         );
 
-        if (is_array($background)) {
-            $bg = array_merge($bgDefault, $background);
+        return true;
+    }
 
-            $this->background['r'] = $bg['r'] >= 0 && $bg['r'] <= 255 ? (int) $bg['r'] : 255;
-            $this->background['g'] = $bg['g'] >= 0 && $bg['g'] <= 255 ? (int) $bg['g'] : 255;
-            $this->background['b'] = $bg['b'] >= 0 && $bg['b'] <= 255 ? (int) $bg['b'] : 255;
-            $this->background['a'] = $bg['a'] >= 0 && $bg['a'] <= 1 ? (float) $bg['a'] : 1;
-        } elseif ($background === 'transparent') {
-            $this->background = array(
-                'r' => 255,
-                'g' => 255,
-                'b' => 255,
-                'a' => 0,
-            );
+    /**
+     * Saves the background color of the destination image with the main color
+     *
+     * @return boolean
+     */
+    public function setBackgroundMainColor(): bool
+    {
+        try {
+            $image = $this->src;
 
-            return true;
-        } elseif ($background === 'currentColor' || $background === 'currentcolor') {
-            try {
-                $image = $this->src;
-
-                if (empty($image)) {
-                    throw new \Exception('There was an error when filling in the background color');
-                    return false;
-                }
-
-                $thumb = @imagecreatetruecolor(1, 1);
-                @imagecopyresampled($thumb, $image, 0, 0, 0, 0, 1, 1, imagesx($image), imagesy($image));
-
-                $mainColor = @strtolower(dechex(imagecolorat($thumb, 0, 0)));
-                $mainColor = '#' . $mainColor;
-
-                imagedestroy($thumb);
-
-                $this->background = $this->getHexaToRGBA($mainColor);
-
-                return true;
-            } catch (\Exception $error) {
+            if (empty($image)) {
+                throw new \Exception('There was an error when filling in the background color');
                 return false;
             }
-        } elseif (preg_match("/^(#|)[a-fA-F0-9]{3,6}$/i", $background)) {
-            $this->background = $this->getHexaToRGBA($background);
+
+            $thumb = @imagecreatetruecolor(1, 1);
+            @imagecopyresampled($thumb, $image, 0, 0, 0, 0, 1, 1, imagesx($image), imagesy($image));
+
+            $mainColor = @strtolower(dechex(imagecolorat($thumb, 0, 0)));
+            $mainColor = '#' . $mainColor;
+
+            imagedestroy($thumb);
+
+            $this->background = $this->getHexaToRGBA($mainColor);
+
             return true;
+        } catch (\Exception $error) {
+            return false;
         }
 
         return false;
     }
 
     /**
-     * Convert Hexadecimal to RGBA
+     * Returns the hexadecimal code as an array "rgba"
      *
-     * @param string $hex Hexadecimal color
-     *
+     * @param string $hexa Hexadecimal code
      * @return array
      */
-    private function getHexaToRGBA(string $hex = '')
+    private function getHexaToRGBA(string $hexa = ''): array
     {
-        $r = 255;
-        $g = 255;
-        $b = 255;
-        $a = 1;
+        $bg = array(
+            'r' => 255,
+            'g' => 255,
+            'b' => 255,
+            'a' => 1,
+        );
 
-        if (empty($hex)) {
-            return array(
-                'r' => $r,
-                'g' => $g,
-                'b' => $b,
-                'a' => $a
-            );
+        if (empty($hexa)) {
+            return $bg;
         }
 
-        $hex = str_replace('#', '', $hex);
-        $hex = mb_strlen($hex) === 3 ? $hex . $hex : $hex;
+        $hexa = str_replace('#', '', $hexa);
+        $hexa = mb_strlen($hexa) === 3 ? $hexa . $hexa : $hexa;
 
-        $r = strlen($hex) === 6 ? hexdec(substr($hex, 0, 2)) : $r;
-        $g = strlen($hex) === 6 ? hexdec(substr($hex, 2, 2)) : $g;
-        $b = strlen($hex) === 6 ? hexdec(substr($hex, 4, 2)) : $b;
+        $bg['r'] = strlen($hexa) === 6 ? hexdec(substr($hexa, 0, 2)) : $bg['r'];
+        $bg['g'] = strlen($hexa) === 6 ? hexdec(substr($hexa, 2, 2)) : $bg['g'];
+        $bg['b'] = strlen($hexa) === 6 ? hexdec(substr($hexa, 4, 2)) : $bg['b'];
 
-        return array(
-            'r' => $r,
-            'g' => $g,
-            'b' => $b,
-            'a' => $a
-        );
+        return $bg;
     }
 
     /**
-     * Get background color
+     * Returns the background color of the destination image as an "rgba" array
      *
      * @return array
      */
-    public function getBackground()
+    public function getBackground(): array
     {
         return $this->background;
     }
 
     /**
-     * Get background color to hexa
+     * Returns the background color of the destination image as a hexadecimal code
      *
      * @return string
      */
-    public function getBackgroundToHexa()
+    public function getBackgroundToHexa(): string
     {
         return str_pad(dechex($this->background['r']), 2, '0', STR_PAD_LEFT) .
             str_pad(dechex($this->background['g']), 2, '0', STR_PAD_LEFT) .
@@ -557,14 +623,13 @@ class Imagine
     }
 
     /**
-     * Adds filters to the image, you can add several filters
+     * Adds a GD filter to the destination image
      *
-     * @param int $filterConstant Filter contant
-     * @param int $value Filter value in percent
-     *
-     * @return bool
+     * @param integer $filterConstant The GD filter constant (https://www.php.net/manual/fr/function.imagefilter.php)
+     * @param mixed $params Filter parameters
+     * @return boolean
      */
-    public function addFilter(int $filterConstant = -1, $params = null)
+    public function addFilter(int $filterConstant = -1, mixed $params = null): bool
     {
         if (is_int($filterConstant) && $filterConstant === -1) {
             return false;
@@ -584,40 +649,47 @@ class Imagine
     }
 
     /**
-     * Get filters
+     * Returns the list of filters applied to the destination image
      *
      * @return array
      */
-    public function getFilters()
+    public function getFilters(): array
     {
         return $this->filters;
     }
 
     /**
-     * If the destination file exists, then we overwrite it
+     * Saves whether to override the destination image or not
      *
-     * @param bool $isOverride Is override
-     *
-     * @return bool
+     * @param boolean $isOverride Override or not the destination image
+     * @return boolean
      */
-    public function setIsOverride(bool $isOverride = true)
+    public function setIsOverride(bool $isOverride = true): bool
     {
         $this->isOverride = $isOverride;
 
+        return true;
+    }
+
+    /**
+     * Returns whether or not to override the destination image
+     *
+     * @return boolean
+     */
+    public function getIsOverride(): bool
+    {
         return $this->isOverride;
     }
 
     /**
-     * Get override
+     * Apply the settings to the destination image and save it to a file
      *
-     * @return bool
+     * @param string $destination The path of the destination file
+     * @param boolean $destroySrcGD Destroyed from the GD resource of the source image when finished
+     * @param boolean $destroyDistGD Destroyed from the GD resource of the destination image when finished
+     * @return boolean
      */
-    public function getIsOverride()
-    {
-        return $this->isOverride;
-    }
-
-    public function save(string $destination = '', bool $destroySrcGD = true, bool $destroyDistGD = true)
+    public function save(string $destination = '', bool $destroySrcGD = true, bool $destroyDistGD = true): bool
     {
         if (empty($destination)) {
             throw new \Exception('The destination path does not exist');
@@ -637,17 +709,27 @@ class Imagine
         return $this->render($destination, $destroySrcGD, $destroyDistGD);
     }
 
-    public function displayOnBrowser(bool $destroySrcGD = true, bool $destroyDistGD = true)
+    /**
+     * Applies the settings to the destination image and displays it in the browser
+     *
+     * @param boolean $destroySrcGD Destroyed from the GD resource of the source image when finished
+     * @param boolean $destroyDistGD Destroyed from the GD resource of the destination image when finished
+     * @return boolean
+     */
+    public function displayOnBrowser(bool $destroySrcGD = true, bool $destroyDistGD = true): bool
     {
         return $this->render(null, $destroySrcGD, $destroyDistGD);
     }
 
     /**
-     * Launch image generation
+     * Apply the settings to the destination image
      *
-     * @return string|bool Returns the name of the file, otherwise it returns false
+     * @param string|null $destination The path of the destination file
+     * @param boolean $destroySrcGD Destroyed from the GD resource of the source image when finished
+     * @param boolean $destroyDistGD Destroyed from the GD resource of the destination image when finished
+     * @return boolean
      */
-    private function render($destination = '', bool $destroySrcGD = true, bool $destroyDistGD = true)
+    private function render($destination = '', bool $destroySrcGD = true, bool $destroyDistGD = true): bool
     {
         $size = $this->calculDistSizeFromThumbSize();
 
@@ -743,7 +825,7 @@ class Imagine
         );
 
         if (!$isSampled) {
-            $this->destroyTempImg();
+            $this->destroyTempImg($destroySrcGD, $destroyDistGD);
             throw new \Exception('Can\'t create the temp destination image');
             return false;
         }
@@ -760,6 +842,7 @@ class Imagine
 
             if (!$check) {
                 throw new \Exception('Can\'t apply filter ' . $filter['type']);
+                return false;
             }
         }
 
@@ -777,11 +860,11 @@ class Imagine
         } elseif ($this->distType === 'gif') {
             $isCreate = imagegif($this->dist, $destination, $this->quality);
         } else {
-            $this->destroyTempImg();
+            $this->destroyTempImg($destroySrcGD, $destroyDistGD);
             return false;
         }
 
-        $this->destroyTempImg();
+        $this->destroyTempImg($destroySrcGD, $destroyDistGD);
 
         if (!$isCreate) {
             throw new \Exception('Can\'t create destination image');
@@ -792,11 +875,11 @@ class Imagine
     }
 
     /**
-     * Set destination sizes
+     * Calculates the size of the destination image with the saved parameters
      *
-     * @return void
+     * @return array
      */
-    private function calculDistSizeFromThumbSize()
+    private function calculDistSizeFromThumbSize(): array
     {
         $thumbWidth = $this->thumbWidth;
         $thumbHeight = $this->thumbHeight;
@@ -884,14 +967,13 @@ class Imagine
     }
 
     /**
-     * Destroy GD ressources
+     * Destroyed GD resources
      *
-     * @param bool $isSrcMustDestroy Destroy dist GD
-     * @param bool $isDistMustDestroy Destroy dist GD
-     *
-     * @return void
+     * @param boolean $isSrcMustDestroy Destroyed from the GD resource of the source image
+     * @param boolean $isDistMustDestroy Destroyed from the GD resource of the destination image
+     * @return boolean
      */
-    private function destroyTempImg(bool $isSrcMustDestroy = true, bool $isDistMustDestroy = true)
+    private function destroyTempImg(bool $isSrcMustDestroy = true, bool $isDistMustDestroy = true): bool
     {
         if ($isSrcMustDestroy) {
             @imagedestroy($this->src);
@@ -900,5 +982,7 @@ class Imagine
         if ($isDistMustDestroy) {
             @imagedestroy($this->dist);
         }
+
+        return !$isSrcMustDestroy && !$isDistMustDestroy ? false : true;
     }
 }

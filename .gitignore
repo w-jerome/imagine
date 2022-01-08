@@ -1,4 +1,10 @@
 .idea
 node_modules
 
-/vendor/
+/tests/assets/output-temp/*
+!/tests/assets/output-temp/.gitkeep
+/vendor
+
+# PHPUnit
+.phpunit.*
+/example.php

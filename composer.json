@@ -22,7 +22,7 @@
   ],
   "type": "library",
   "require": {
-    "php": ">=5.4",
+    "php": ">=7.2",
     "ext-gd": "*"
   },
   "autoload": {

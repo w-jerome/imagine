@@ -58,7 +58,7 @@ class Imagine
             return $this;
         }
 
-        if (!@getimagesize($imgSrc)) {
+        if (!@\getimagesize($imgSrc)) {
             throw new \Exception('Image Corrupted');
             return $this;
         }
@@ -87,24 +87,24 @@ class Imagine
      */
     private function setSrcMime(): bool
     {
-        $info = finfo_open(FILEINFO_MIME_TYPE);
+        $info = \finfo_open(FILEINFO_MIME_TYPE);
 
         if (!$info) {
             throw new \Exception('There is a problem to get the information from the source image');
             return false;
         }
 
-        $file = finfo_file($info, $this->srcPath);
+        $file = \finfo_file($info, $this->srcPath);
 
         if (!$file) {
-            finfo_close($info);
+            \finfo_close($info);
             throw new \Exception('There is a problem to get the information from the source image');
             return false;
         }
 
         $this->srcMime = $file;
 
-        finfo_close($info);
+        \finfo_close($info);
 
         return true;
     }
@@ -117,11 +117,11 @@ class Imagine
     private function setSrc(): bool
     {
         if ($this->srcMime === 'image/jpeg') {
-            $this->src = imagecreatefromjpeg($this->srcPath);
+            $this->src = \imagecreatefromjpeg($this->srcPath);
         } elseif ($this->srcMime === 'image/png') {
-            $this->src = imagecreatefrompng($this->srcPath);
+            $this->src = \imagecreatefrompng($this->srcPath);
         } elseif ($this->srcMime === 'image/gif') {
-            $this->src = imagecreatefromgif($this->srcPath);
+            $this->src = \imagecreatefromgif($this->srcPath);
         }
 
         if (empty($this->src)) {
@@ -139,7 +139,7 @@ class Imagine
      */
     private function setSrcSize(): bool
     {
-        $info = getimagesize($this->srcPath);
+        $info = \getimagesize($this->srcPath);
 
         if (empty($info) || (!is_int($info[0]) || !is_int($info[1]))) {
             throw new \Exception('There is a problem to get the size of the source image');
@@ -160,7 +160,7 @@ class Imagine
     private function setSrcType(): bool
     {
         if ($this->srcMime === 'image/jpeg') {
-            $extension = pathinfo($this->srcPath, PATHINFO_EXTENSION);
+            $extension = \pathinfo($this->srcPath, PATHINFO_EXTENSION);
 
             if (!empty($extension) && $extension === 'jpeg') {
                 $this->srcType = $extension; // It can be "jpeg"... Honestly
@@ -188,7 +188,7 @@ class Imagine
      */
     private function setSrcDPI(): bool
     {
-        $dpi = imageresolution($this->src);
+        $dpi = \imageresolution($this->src);
 
         if (empty($dpi)) {
             throw new \Exception('There was an error while searching for the resolution');
@@ -553,13 +553,13 @@ class Imagine
                 return false;
             }
 
-            $thumb = @imagecreatetruecolor(1, 1);
-            @imagecopyresampled($thumb, $image, 0, 0, 0, 0, 1, 1, imagesx($image), imagesy($image));
+            $thumb = @\imagecreatetruecolor(1, 1);
+            @\imagecopyresampled($thumb, $image, 0, 0, 0, 0, 1, 1, \imagesx($image), \imagesy($image));
 
-            $mainColor = @strtolower(dechex(imagecolorat($thumb, 0, 0)));
+            $mainColor = @strtolower(dechex(\imagecolorat($thumb, 0, 0)));
             $mainColor = '#' . $mainColor;
 
-            imagedestroy($thumb);
+            \imagedestroy($thumb);
 
             $this->background = $this->getHexaToRGBA($mainColor);
 
@@ -738,7 +738,7 @@ class Imagine
         $this->distWidth = $size[2];
         $this->distHeight = $size[3];
 
-        $this->dist = imagecreatetruecolor($this->thumbWidth, $this->thumbHeight);
+        $this->dist = \imagecreatetruecolor($this->thumbWidth, $this->thumbHeight);
 
         if (empty($this->dist)) {
             throw new \Exception('There is a problem when processing the destination file');
@@ -749,7 +749,7 @@ class Imagine
             $this->distDPI = $this->srcDPI;
         }
 
-        $dpi = imageresolution($this->dist, $this->distDPI[0], $this->distDPI[1]);
+        $dpi = \imageresolution($this->dist, $this->distDPI[0], $this->distDPI[1]);
 
         if (empty($dpi)) {
             throw new \Exception('There is a problem when processing the destination file');
@@ -763,9 +763,9 @@ class Imagine
 
         // If the transparent background is set, then apply it to the destination image
         if ($this->background['a'] < 1) {
-            imagealphablending($this->dist, false);
+            \imagealphablending($this->dist, false);
             $alpha = (1 - $this->background['a']) * 127;
-            $transparency = imagecolorallocatealpha(
+            $transparency = \imagecolorallocatealpha(
                 $this->dist,
                 $this->background['r'],
                 $this->background['g'],
@@ -773,16 +773,16 @@ class Imagine
                 $alpha
             );
 
-            imagefill($this->dist, 0, 0, $transparency);
-            imagesavealpha($this->dist, true);
+            \imagefill($this->dist, 0, 0, $transparency);
+            \imagesavealpha($this->dist, true);
         } else {
-            $bgColor = imagecolorallocate(
+            $bgColor = \imagecolorallocate(
                 $this->dist,
                 $this->background['r'],
                 $this->background['g'],
                 $this->background['b']
             );
-            imagefilledrectangle($this->dist, 0, 0, $this->thumbWidth, $this->thumbHeight, $bgColor);
+            \imagefilledrectangle($this->dist, 0, 0, $this->thumbWidth, $this->thumbHeight, $bgColor);
             unset($bgColor);
         }
         // unset($bgColor);
@@ -811,7 +811,7 @@ class Imagine
             }
         }
 
-        $isSampled = imagecopyresampled(
+        $isSampled = \imagecopyresampled(
             $this->dist,
             $this->src,
             $position[0],
@@ -835,9 +835,9 @@ class Imagine
             $check = true;
 
             if (isset($filter['params'])) {
-                $check = imagefilter($this->dist, $filter['type'], $filter['params']);
+                $check = \imagefilter($this->dist, $filter['type'], $filter['params']);
             } else {
-                $check = imagefilter($this->dist, $filter['type']);
+                $check = \imagefilter($this->dist, $filter['type']);
             }
 
             if (!$check) {
@@ -854,11 +854,11 @@ class Imagine
         $isCreate = false;
 
         if ($this->distType === 'jpg' || $this->distType === 'jpeg') {
-            $isCreate = imagejpeg($this->dist, $destination, $this->quality);
+            $isCreate = \imagejpeg($this->dist, $destination, $this->quality);
         } elseif ($this->distType === 'png') {
-            $isCreate = imagepng($this->dist, $destination, ($this->quality * 9) / 100);
+            $isCreate = \imagepng($this->dist, $destination, ($this->quality * 9) / 100);
         } elseif ($this->distType === 'gif') {
-            $isCreate = imagegif($this->dist, $destination, $this->quality);
+            $isCreate = \imagegif($this->dist, $destination, $this->quality);
         } else {
             $this->destroyTempImg($destroySrcGD, $destroyDistGD);
             return false;
@@ -976,11 +976,11 @@ class Imagine
     private function destroyTempImg(bool $isSrcMustDestroy = true, bool $isDistMustDestroy = true): bool
     {
         if ($isSrcMustDestroy) {
-            @imagedestroy($this->src);
+            @\imagedestroy($this->src);
         }
 
         if ($isDistMustDestroy) {
-            @imagedestroy($this->dist);
+            @\imagedestroy($this->dist);
         }
 
         return !$isSrcMustDestroy && !$isDistMustDestroy ? false : true;

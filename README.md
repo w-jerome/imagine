@@ -5,7 +5,7 @@
 ## Installation
 
 ```console
-composer require imagine/imagine
+composer require wjerome/imagine
 ```
 
 ## Usage

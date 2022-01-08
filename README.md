@@ -41,12 +41,15 @@ $image = new Imagine('./my-picture.jpg');
 $image->setWidth(200);
 $image->setHeight(290);
 $image->setType('png');
-$image->setDPI(72);
+$image->setDPI(96);
 $image->setQuality(90);
 $image->setFit('cover');
-$image->setPosition('center', 'center');
-$image->setBackground('currentColor');
-$image->addFilter('grayscale');
+$image->setPosition('left', 'top');
+$image->setBackgroundFromArray(array('r' => 255, 'g' => '255', 'b' => 255, 'a' => 1));
+$image->setBackgroundFromHexa('#ffaaff');
+$image->setBackgroundTransparent();
+$image->setBackgroundMainColor();
+$image->addFilter(IMG_FILTER_GRAYSCALE);
 $image->setIsOverride(false);
 
 // Getter
@@ -57,6 +60,7 @@ $image->getSrcType();
 $image->getSrcDPI();
 $image->getDistWidth();
 $image->getDistHeight();
+$image->getDistMime();
 $image->getDistType();
 $image->getDistDPI();
 $image->getQuality();
@@ -140,7 +144,7 @@ $image = new Imagine('./tests/assets/file-transparent.png');
 $image->setWidth(300);
 $image->setHeight(300);
 $image->setFit('contain');
-$image->setBackground('transparent');
+$image->setBackgroundTransparent();
 $image->save('./doc/img/example-06.png');
 ```
 
@@ -153,7 +157,7 @@ $image = new Imagine('./tests/assets/file-valid.jpg');
 $image->setWidth(300);
 $image->setHeight(300);
 $image->setFit('contain');
-$image->setBackground('currentColor');
+$image->setBackgroundMainColor();
 $image->save('./doc/img/example-07.jpg');
 ```
 
@@ -166,7 +170,7 @@ $image = new Imagine('./tests/assets/file-transparent.png');
 $image->setWidth(300);
 $image->setHeight(300);
 $image->setFit('contain');
-$image->setBackground(array(
+$image->setBackgroundFromArray(array(
   'r' => 255,
   'g' => 0,
   'b' => 0,
@@ -185,7 +189,7 @@ $image = new Imagine('./tests/assets/file-transparent.png');
 $image->setWidth(300);
 $image->setHeight(300);
 $image->setFit('contain');
-$image->setBackground('#ffaaff');
+$image->setBackgroundFromHexa('#ffaaff');
 $image->setType('jpg');
 $image->save('./doc/img/example-09.jpg');
 ```
@@ -221,7 +225,7 @@ $image->save('./doc/img/example-11.jpg');
 ```php
 $image = new Imagine('./tests/assets/file-transparent.png');
 $image->setWidth(300);
-$image->setType('jpg'); // 'jpg'|'png'
+$image->setType('jpg'); // jpg|jpeg|png|gif
 $image->save('./doc/img/example-12.jpg');
 ```
 
@@ -253,3 +257,12 @@ $image->save('./doc/img/example-14.jpg');
 ```
 
 ![example 14](/doc/img/example-14.jpg)
+
+### Display on browser
+
+```php
+$image = new Imagine('./tests/assets/file-valid.jpg');
+$mime = $image->getDistMime();
+header('Content-type:' . $mime);
+$image->displayOnBrowser();
+```

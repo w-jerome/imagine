@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 /**
  * PHP micro library to resize, thumbnail or apply filters to your images
  *
@@ -7,8 +9,6 @@
  **/
 
 namespace Imagine;
-
-use phpDocumentor\Reflection\PseudoTypes\True_;
 
 class Imagine
 {

@@ -225,7 +225,7 @@ $image->save('./doc/img/example-11.jpg');
 ```php
 $image = new Imagine('./tests/assets/file-transparent.png');
 $image->setWidth(300);
-$image->setType('jpg'); // jpg|jpeg|png|gif|webp
+$image->setType('jpg'); // jpg|jpeg|png|gif|webp|bmp
 $image->save('./doc/img/example-12.jpg');
 ```
 

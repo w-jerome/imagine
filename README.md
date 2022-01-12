@@ -58,7 +58,7 @@ $image->setDPI(96);
 $image->setQuality(90);
 $image->setFit('cover');
 $image->setPosition('left', 'top');
-$image->setBackgroundFromArray(array('r' => 255, 'g' => '255', 'b' => 255, 'a' => 1));
+$image->setBackgroundFromArray(array('r' => 255, 'g' => 255, 'b' => 255, 'a' => 1));
 $image->setBackgroundFromHexa('#ffaaff');
 $image->setBackgroundTransparent();
 $image->setBackgroundMainColor();
@@ -85,7 +85,6 @@ $image->getBackgroundToHexa();
 $image->getFilters();
 $image->getIsInterlace();
 $image->getIsOverride();
-$image->getDestination();
 
 // Save file
 $image->save('./uploads/my-image.jpg');

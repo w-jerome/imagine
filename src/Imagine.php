@@ -6,9 +6,9 @@
  * @package Imagine\Imagine
  **/
 
-namespace Imagine;
+declare(strict_types=1);
 
-use phpDocumentor\Reflection\PseudoTypes\True_;
+namespace Imagine;
 
 class Imagine
 {
@@ -32,12 +32,15 @@ class Imagine
     private $position = array('center', 'center');
     private $filters = array();
     private $background = array('r' => 255, 'g' => 255, 'b' => 255, 'a' => 1);
+    private $isInterlace = false;
     private $isOverride = true;
     private const TYPES_ALLOWED = array(
         'jpg',
         'jpeg',
         'png',
         'gif',
+        'webp',
+        'bmp',
     );
     private const FITS_ALLOWED = array(
         'stretch',
@@ -122,6 +125,10 @@ class Imagine
             $this->src = \imagecreatefrompng($this->srcPath);
         } elseif ($this->srcMime === 'image/gif') {
             $this->src = \imagecreatefromgif($this->srcPath);
+        } elseif ($this->srcMime === 'image/webp') {
+            $this->src = \imagecreatefromwebp($this->srcPath);
+        } elseif ($this->srcMime === 'image/bmp') {
+            $this->src = \imagecreatefrombmp($this->srcPath);
         }
 
         if (empty($this->src)) {
@@ -171,6 +178,10 @@ class Imagine
             $this->srcType = 'png';
         } elseif ($this->srcMime === 'image/gif') {
             $this->srcType = 'gif';
+        } elseif ($this->srcMime === 'image/webp') {
+            $this->srcType = 'webp';
+        } elseif ($this->srcMime === 'image/bmp') {
+            $this->srcType = 'bmp';
         }
 
         if (empty($this->srcType)) {
@@ -302,6 +313,10 @@ class Imagine
                 return 'image/png';
             } elseif ($this->distType === 'gif') {
                 return 'image/gif';
+            } elseif ($this->distType === 'webp') {
+                return 'image/webp';
+            } elseif ($this->distType === 'bmp') {
+                return 'image/bmp';
             }
         }
 
@@ -311,7 +326,7 @@ class Imagine
     /**
      * Convert the type of the destination image
      *
-     * @param string $type The type of the destination image (jpg|jpeg|png|gif)
+     * @param string $type The type of the destination image (jpg|jpeg|png|gif|webp|bmp)
      * @return boolean
      */
     public function setType(string $type = ''): bool
@@ -659,6 +674,29 @@ class Imagine
     }
 
     /**
+     * Saves if the destination image is to be displayed gradually (only jpg)
+     *
+     * @param boolean $isInterlace If the destination image is to be displayed gradually
+     * @return boolean
+     */
+    public function setIsInterlace(bool $isInterlace = true): bool
+    {
+        $this->isInterlace = $isInterlace;
+
+        return true;
+    }
+
+    /**
+     * Returns if the destination image is to be displayed gradually
+     *
+     * @return boolean
+     */
+    public function getIsInterlace(): bool
+    {
+        return $this->isInterlace;
+    }
+
+    /**
      * Saves whether to override the destination image or not
      *
      * @param boolean $isOverride Override or not the destination image
@@ -851,6 +889,15 @@ class Imagine
             $this->distType = $this->srcType;
         }
 
+        if (($this->distType === 'jpg' || $this->distType === 'jpeg') && $this->isInterlace) {
+            $isInterlace = \imageinterlace($this->dist, true);
+
+            if (!$isInterlace) {
+                throw new \Exception('There was a problem to interlace');
+                return false;
+            }
+        }
+
         $isCreate = false;
 
         if ($this->distType === 'jpg' || $this->distType === 'jpeg') {
@@ -859,6 +906,10 @@ class Imagine
             $isCreate = \imagepng($this->dist, $destination, ($this->quality * 9) / 100);
         } elseif ($this->distType === 'gif') {
             $isCreate = \imagegif($this->dist, $destination, $this->quality);
+        } elseif ($this->distType === 'webp') {
+            $isCreate = \imagewebp($this->dist, $destination, $this->quality);
+        } elseif ($this->distType === 'bmp') {
+            $isCreate = \imagebmp($this->dist, $destination, $this->quality);
         } else {
             $this->destroyTempImg($destroySrcGD, $destroyDistGD);
             return false;

@@ -2,6 +2,19 @@
 
 🖼 Imagine (image-engine) is a PHP micro library to resize, thumbnail or apply filters to your images
 
+## Required
+
+- PHP >= 7.2
+- GD
+
+## File types supported
+
+- jpg
+- png
+- gif
+- webp
+- bmp
+
 ## Installation
 
 ```console

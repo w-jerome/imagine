@@ -38,6 +38,7 @@ class Imagine
         'jpeg',
         'png',
         'gif',
+        'webp',
     );
     private const FITS_ALLOWED = array(
         'stretch',
@@ -122,6 +123,8 @@ class Imagine
             $this->src = \imagecreatefrompng($this->srcPath);
         } elseif ($this->srcMime === 'image/gif') {
             $this->src = \imagecreatefromgif($this->srcPath);
+        } elseif ($this->srcMime === 'image/webp') {
+            $this->src = \imagecreatefromwebp($this->srcPath);
         }
 
         if (empty($this->src)) {
@@ -171,6 +174,8 @@ class Imagine
             $this->srcType = 'png';
         } elseif ($this->srcMime === 'image/gif') {
             $this->srcType = 'gif';
+        } elseif ($this->srcMime === 'image/webp') {
+            $this->srcType = 'webp';
         }
 
         if (empty($this->srcType)) {
@@ -302,6 +307,8 @@ class Imagine
                 return 'image/png';
             } elseif ($this->distType === 'gif') {
                 return 'image/gif';
+            } elseif ($this->distType === 'webp') {
+                return 'image/webp';
             }
         }
 
@@ -311,7 +318,7 @@ class Imagine
     /**
      * Convert the type of the destination image
      *
-     * @param string $type The type of the destination image (jpg|jpeg|png|gif)
+     * @param string $type The type of the destination image (jpg|jpeg|png|gif|webp)
      * @return boolean
      */
     public function setType(string $type = ''): bool
@@ -859,6 +866,8 @@ class Imagine
             $isCreate = \imagepng($this->dist, $destination, ($this->quality * 9) / 100);
         } elseif ($this->distType === 'gif') {
             $isCreate = \imagegif($this->dist, $destination, $this->quality);
+        } elseif ($this->distType === 'webp') {
+            $isCreate = \imagewebp($this->dist, $destination, $this->quality);
         } else {
             $this->destroyTempImg($destroySrcGD, $destroyDistGD);
             return false;

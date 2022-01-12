@@ -58,11 +58,12 @@ $image->setDPI(96);
 $image->setQuality(90);
 $image->setFit('cover');
 $image->setPosition('left', 'top');
-$image->setBackgroundFromArray(array('r' => 255, 'g' => '255', 'b' => 255, 'a' => 1));
+$image->setBackgroundFromArray(array('r' => 255, 'g' => 255, 'b' => 255, 'a' => 1));
 $image->setBackgroundFromHexa('#ffaaff');
 $image->setBackgroundTransparent();
 $image->setBackgroundMainColor();
 $image->addFilter(IMG_FILTER_GRAYSCALE);
+$image->setIsInterlace(true);
 $image->setIsOverride(false);
 
 // Getter
@@ -82,8 +83,8 @@ $image->getPosition();
 $image->getBackground();
 $image->getBackgroundToHexa();
 $image->getFilters();
+$image->getIsInterlace();
 $image->getIsOverride();
-$image->getDestination();
 
 // Save file
 $image->save('./uploads/my-image.jpg');
@@ -270,6 +271,17 @@ $image->save('./doc/img/example-14.jpg');
 ```
 
 ![example 14](/doc/img/example-14.jpg)
+
+### Display progressively the `jpg` and `jpeg` images
+
+```php
+$image = new Imagine('./tests/assets/file-valid.jpg');
+$image->setWidth(300);
+$image->setIsInterlace(true);
+$image->save('./doc/img/example-15.jpg');
+```
+
+![example 15](/doc/img/example-15.jpg)
 
 ### Display on browser
 

@@ -32,6 +32,7 @@ class Imagine
     private $position = array('center', 'center');
     private $filters = array();
     private $background = array('r' => 255, 'g' => 255, 'b' => 255, 'a' => 1);
+    private $isInterlace = false;
     private $isOverride = true;
     private const TYPES_ALLOWED = array(
         'jpg',
@@ -673,6 +674,29 @@ class Imagine
     }
 
     /**
+     * Saves if the destination image is to be displayed gradually (only jpg)
+     *
+     * @param boolean $isInterlace If the destination image is to be displayed gradually
+     * @return boolean
+     */
+    public function setIsInterlace(bool $isInterlace = true): bool
+    {
+        $this->isInterlace = $isInterlace;
+
+        return true;
+    }
+
+    /**
+     * Returns if the destination image is to be displayed gradually
+     *
+     * @return boolean
+     */
+    public function getIsInterlace(): bool
+    {
+        return $this->isInterlace;
+    }
+
+    /**
      * Saves whether to override the destination image or not
      *
      * @param boolean $isOverride Override or not the destination image
@@ -863,6 +887,15 @@ class Imagine
         // Set the final extension if there is no conversion done on the file
         if (empty($this->distType)) {
             $this->distType = $this->srcType;
+        }
+
+        if (($this->distType === 'jpg' || $this->distType === 'jpeg') && $this->isInterlace) {
+            $isInterlace = \imageinterlace($this->dist, true);
+
+            if (!$isInterlace) {
+                throw new \Exception('There was a problem to interlace');
+                return false;
+            }
         }
 
         $isCreate = false;

@@ -1,12 +1,12 @@
 <?php
 
-declare(strict_types=1);
-
 /**
  * PHP micro library to resize, thumbnail or apply filters to your images
  *
  * @package Imagine\Imagine
  **/
+
+declare(strict_types=1);
 
 namespace Imagine;
 

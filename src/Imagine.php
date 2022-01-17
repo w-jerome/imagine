@@ -153,8 +153,8 @@ class Imagine
             return false;
         }
 
-        $this->srcWidth = $info[0];
-        $this->srcHeight = $info[1];
+        $this->srcWidth = (int) $info[0];
+        $this->srcHeight = (int) $info[1];
 
         return true;
     }
@@ -245,7 +245,12 @@ class Imagine
      */
     public function getDistWidth(): int
     {
-        $size = $this->calculDistSizeFromThumbSize();
+        $size = $this->calculDistSizeFromThumbSize(
+            $this->thumbWidth,
+            $this->thumbHeight,
+            $this->distWidth,
+            $this->distHeight
+        );
 
         return $size[0];
     }
@@ -284,7 +289,12 @@ class Imagine
      */
     public function getDistHeight(): int
     {
-        $size = $this->calculDistSizeFromThumbSize();
+        $size = $this->calculDistSizeFromThumbSize(
+            $this->thumbWidth,
+            $this->thumbHeight,
+            $this->distWidth,
+            $this->distHeight
+        );
 
         return $size[1];
     }
@@ -769,7 +779,12 @@ class Imagine
      */
     private function render($destination = '', bool $destroySrcGD = true, bool $destroyDistGD = true): bool
     {
-        $size = $this->calculDistSizeFromThumbSize();
+        $size = $this->calculDistSizeFromThumbSize(
+            $this->thumbWidth,
+            $this->thumbHeight,
+            $this->distWidth,
+            $this->distHeight
+        );
 
         $this->thumbWidth = $size[0];
         $this->thumbHeight = $size[1];
@@ -834,18 +849,18 @@ class Imagine
             if ($this->position[0] === 'left') {
                 $position[0] = 0;
             } elseif ($this->position[0] === 'center') {
-                $position[0] = ($this->thumbWidth - $this->distWidth) / 2;
+                $position[0] = (int) (($this->thumbWidth - $this->distWidth) / 2);
             } elseif ($this->position[0] === 'right') {
-                $position[0] = $this->thumbWidth - (int) $this->distWidth;
+                $position[0] = (int) ($this->thumbWidth - (int) $this->distWidth);
             }
 
             // Y Calcul
             if ($this->position[1] === 'top') {
                 $position[1] = 0;
             } elseif ($this->position[1] === 'center') {
-                $position[1] = ($this->thumbHeight - $this->distHeight) / 2;
+                $position[1] = (int) (($this->thumbHeight - $this->distHeight) / 2);
             } elseif ($this->position[1] === 'bottom') {
-                $position[1] = $this->thumbHeight - (int) $this->distHeight;
+                $position[1] = (int) ($this->thumbHeight - (int) $this->distHeight);
             }
         }
 
@@ -930,20 +945,19 @@ class Imagine
      *
      * @return array
      */
-    private function calculDistSizeFromThumbSize(): array
-    {
-        $thumbWidth = $this->thumbWidth;
-        $thumbHeight = $this->thumbHeight;
-        $distWidth = $this->distWidth;
-        $distHeight = $this->distHeight;
-
+    private function calculDistSizeFromThumbSize(
+        int $thumbWidth = 0,
+        int $thumbHeight = 0,
+        int $distWidth = 0,
+        int $distHeight = 0
+    ): array {
         // On vérifit si c'est un redimmenssionnement
         if ($thumbWidth > 0 xor $thumbHeight > 0) {
             // On enregistre la taille une fois redimmenssionné
             if ($thumbWidth) {
-                $thumbHeight = $this->srcHeight * ($thumbWidth / $this->srcWidth);
+                $thumbHeight = (int) ($this->srcHeight * ($thumbWidth / $this->srcWidth));
             } else {
-                $thumbWidth = $this->srcWidth * ($thumbHeight / $this->srcHeight);
+                $thumbWidth = (int) ($this->srcWidth * ($thumbHeight / $this->srcHeight));
             }
 
             $distWidth = $thumbWidth;
@@ -955,58 +969,53 @@ class Imagine
                 $distWidth = $thumbWidth;
                 $distHeight = $thumbHeight;
             } elseif ($this->fit === 'contain' || $this->fit === 'cover') {
-                $fitAllowed = array(
-                    'contain' => array(
-                        $thumbWidth > $thumbHeight &&
-                        $this->srcWidth > $this->srcHeight &&
-                        ($this->srcWidth * $thumbHeight) / $this->srcHeight < $thumbWidth
-                            ? true
-                            : false,
-                        $thumbWidth > $thumbHeight && $this->srcWidth <= $this->srcHeight ? true : false,
-                        $thumbWidth <= $thumbHeight &&
-                        $this->srcWidth < $this->srcHeight &&
-                        ($this->srcWidth * $thumbHeight) / $this->srcHeight < $thumbWidth
-                            ? true
-                            : false,
-                        $thumbWidth === $thumbHeight && $this->srcWidth === $this->srcHeight ? true : false
-                    ),
-                    'cover' => array(
-                        $thumbWidth > $thumbHeight &&
-                        $this->srcWidth > $this->srcHeight &&
-                        ($this->srcWidth * $thumbHeight) / $this->srcHeight > $thumbWidth
-                            ? true
-                            : false,
-                        $thumbWidth <= $thumbHeight && $this->srcWidth > $this->srcHeight ? true : false,
-                        $thumbWidth < $thumbHeight &&
-                        $this->srcWidth <= $this->srcHeight &&
-                        ($this->srcWidth * $thumbHeight) / $this->srcHeight > $thumbWidth
-                            ? true
-                            : false,
-                        $thumbWidth === $thumbHeight && $this->srcWidth === $this->srcHeight ? true : false
-                    )
+                $isArrayContain = array(
+                    $thumbWidth > $thumbHeight &&
+                    $this->srcWidth > $this->srcHeight &&
+                    ($this->srcWidth * $thumbHeight) / $this->srcHeight < $thumbWidth,
+                    $thumbWidth > $thumbHeight &&
+                    $this->srcWidth <= $this->srcHeight,
+                    $thumbWidth <= $thumbHeight &&
+                    $this->srcWidth < $this->srcHeight &&
+                    ($this->srcWidth * $thumbHeight) / $this->srcHeight < $thumbWidth,
+                    $thumbWidth === $thumbHeight &&
+                    $this->srcWidth === $this->srcHeight,
+                );
+
+                $isArrayCover = array(
+                    $thumbWidth > $thumbHeight &&
+                    $this->srcWidth > $this->srcHeight &&
+                    ($this->srcWidth * $thumbHeight) / $this->srcHeight > $thumbWidth,
+                    $thumbWidth <= $thumbHeight &&
+                    $this->srcWidth > $this->srcHeight,
+                    $thumbWidth < $thumbHeight &&
+                    $this->srcWidth <= $this->srcHeight &&
+                    ($this->srcWidth * $thumbHeight) / $this->srcHeight > $thumbWidth,
+                    $thumbWidth === $thumbHeight &&
+                    $this->srcWidth === $this->srcHeight,
                 );
 
                 // Si c'est le cas 1
                 if (
-                    (in_array(true, $fitAllowed['contain']) && $this->fit === 'contain') ||
-                    (in_array(true, $fitAllowed['cover']) && $this->fit === 'cover')
+                    (in_array(true, $isArrayContain) && $this->fit === 'contain') ||
+                    (in_array(true, $isArrayCover) && $this->fit === 'cover')
                 ) {
                     // On redimmensionne 'img' d'abord par sa largeur
-                    $distWidth = ($this->srcWidth * $thumbHeight) / $this->srcHeight;
-                    $distHeight = ($this->srcHeight * $distWidth) / $this->srcWidth;
+                    $distWidth = (int) (($this->srcWidth * $thumbHeight) / $this->srcHeight);
+                    $distHeight = (int) (($this->srcHeight * $distWidth) / $this->srcWidth);
                 } else {
                     // Si c'est le cas 2
 
                     // On redimmensionne 'img' d'abord par sa hauteur
-                    $distHeight = ($this->srcHeight * $thumbWidth) / $this->srcWidth;
-                    $distWidth = ($this->srcWidth * $distHeight) / $this->srcHeight;
+                    $distHeight = (int) (($this->srcHeight * $thumbWidth) / $this->srcWidth);
+                    $distWidth = (int) (($this->srcWidth * $distHeight) / $this->srcHeight);
                 }
             }
         } else {
             // Sinon on donne les même dimension que l'image original
 
-            $distWidth = $thumbWidth = $this->srcWidth;
-            $distHeight = $thumbHeight = $this->srcHeight;
+            $distWidth = $thumbWidth = (int) $this->srcWidth;
+            $distHeight = $thumbHeight = (int) $this->srcHeight;
         }
 
         return array(

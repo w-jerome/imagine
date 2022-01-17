@@ -571,20 +571,33 @@ class Imagine
     public function setBackgroundMainColor(): bool
     {
         try {
-            $image = $this->src;
-
-            if (empty($image)) {
+            if (empty($this->src)) {
                 throw new \Exception('There was an error when filling in the background color');
                 return false;
             }
 
             $thumb = @\imagecreatetruecolor(1, 1);
-            @\imagecopyresampled($thumb, $image, 0, 0, 0, 0, 1, 1, \imagesx($image), \imagesy($image));
+            @\imagecopyresampled($thumb, $this->src, 0, 0, 0, 0, 1, 1, $this->srcWidth, $this->srcHeight);
 
-            $mainColor = @strtolower(dechex(\imagecolorat($thumb, 0, 0)));
-            $mainColor = '#' . $mainColor;
+            $index = @\imagecolorat($thumb, 0, 0);
 
-            \imagedestroy($thumb);
+            if ($index === false) {
+                @\imagedestroy($thumb);
+                throw new \Exception('There was an error when filling in the background color');
+                return false;
+            }
+
+            $mainColor = @strtolower(@dechex($index));
+
+            if (empty($mainColor)) {
+                @\imagedestroy($thumb);
+                throw new \Exception('There was an error when filling in the background color');
+                return false;
+            }
+
+            $mainColor = '#' . (string) $mainColor;
+
+            @\imagedestroy($thumb);
 
             $this->background = $this->getHexaToRGBA($mainColor);
 

@@ -18,13 +18,13 @@ class Imagine
     private $srcHeight = 0;
     private $srcMime = '';
     private $srcType = '';
-    private $srcDPI = array(0, 0);
+    private $srcDPI = array('x' => 0, 'y' => 0);
     private $dist = null;
     private $distWidth = 0;
     private $distHeight = 0;
     private $distMime = '';
     private $distType = '';
-    private $distDPI = array(0, 0);
+    private $distDPI = array('x' => 0, 'y' => 0);
     private $thumbWidth = 0;
     private $thumbHeight = 0;
     private $quality = 100;
@@ -206,7 +206,10 @@ class Imagine
             return false;
         }
 
-        $this->srcDPI = $dpi ?? array(72, 72);
+        $this->srcDPI =array(
+            'x' => $dpi[0],
+            'y' => $dpi[1],
+        );
 
         return true;
     }
@@ -379,7 +382,10 @@ class Imagine
         $dpiX = ($dpiX <= 0) ? 72 : $dpiX;
         $dpiY = ($dpiY <= 0) ? $dpiX : $dpiY;
 
-        $this->distDPI = array($dpiX, $dpiY);
+        $this->distDPI = array(
+            'x' => $dpiX,
+            'y' => $dpiY,
+        );
 
         return true;
     }
@@ -401,7 +407,7 @@ class Imagine
      */
     public function getDistDPI(): array
     {
-        if (empty($this->distDPI[0]) || empty($this->distDPI[1])) {
+        if (empty($this->distDPI['x']) || empty($this->distDPI['y'])) {
             return $this->srcDPI;
         }
 
@@ -805,8 +811,8 @@ class Imagine
             return false;
         }
 
-        if (empty($this->distDPI[0]) || empty($this->distDPI[1])) {
-            $this->distDPI = $this->srcDPI;
+        if (empty($this->distDPI['x']) || empty($this->distDPI['y'])) {
+            $this->setDPI($this->srcDPI['x'], $this->srcDPI['y']);
         }
 
         // Set the final extension if there is no conversion done on the file
@@ -814,7 +820,7 @@ class Imagine
             $this->setType($this->srcType);
         }
 
-        $dpi = \imageresolution($this->dist, $this->distDPI[0], $this->distDPI[1]);
+        $dpi = \imageresolution($this->dist, $this->distDPI['x'], $this->distDPI['y']);
 
         if (empty($dpi)) {
             throw new \Exception('There is a problem when processing the destination file');

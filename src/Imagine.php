@@ -206,7 +206,7 @@ class Imagine
             return false;
         }
 
-        $this->srcDPI =array(
+        $this->srcDPI = array(
             'x' => $dpi[0],
             'y' => $dpi[1],
         );

@@ -58,7 +58,7 @@ $image->setDPI(96);
 $image->setQuality(90);
 $image->setFit('cover');
 $image->setPosition('left', 'top');
-$image->setBackgroundFromArray(array('r' => 255, 'g' => 255, 'b' => 255, 'a' => 1));
+$image->setBackgroundFromRGBA(255, 255, 255, 1);
 $image->setBackgroundFromHexa('#ffaaff');
 $image->setBackgroundTransparent();
 $image->setBackgroundMainColor();
@@ -184,12 +184,7 @@ $image = new Imagine('./tests/assets/file-transparent.png');
 $image->setWidth(300);
 $image->setHeight(300);
 $image->setFit('contain');
-$image->setBackgroundFromArray(array(
-  'r' => 255,
-  'g' => 0,
-  'b' => 0,
-  'a' => 1,
-));
+$image->setBackgroundFromRGBA(255, 0, 0, 1);
 $image->setType('jpg');
 $image->save('./doc/img/example-08.jpg');
 ```

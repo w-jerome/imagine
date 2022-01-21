@@ -505,28 +505,20 @@ class Imagine
     }
 
     /**
-     * Saves the background color of the destination image with an "rgba" array
+     * Saves the background color of the destination image with "rgba" values
      *
-     * @param array $background Array in "rgba"
+     * @param integer $r Red
+     * @param integer $g Green
+     * @param integer $b Blue
+     * @param float $a Alpha
      * @return boolean
      */
-    public function setBackgroundFromArray(array $background = array()): bool
+    public function setBackgroundFromRGBA(int $r = 255, int $g = 255, int $b = 255, float $a = 1): bool
     {
-        if (!is_array($background)) {
-            return false;
-        }
-
-        $bg = array_merge(array(
-            'r' => 255,
-            'g' => 255,
-            'b' => 255,
-            'a' => 1,
-        ), $background);
-
-        $this->background['r'] = $bg['r'] >= 0 && $bg['r'] <= 255 ? (int) $bg['r'] : 255;
-        $this->background['g'] = $bg['g'] >= 0 && $bg['g'] <= 255 ? (int) $bg['g'] : 255;
-        $this->background['b'] = $bg['b'] >= 0 && $bg['b'] <= 255 ? (int) $bg['b'] : 255;
-        $this->background['a'] = $bg['a'] >= 0 && $bg['a'] <= 1 ? (float) $bg['a'] : 1;
+        $this->background['r'] = $r >= 0 && $r <= 255 ? $r : 255;
+        $this->background['g'] = $g >= 0 && $g <= 255 ? $g : 255;
+        $this->background['b'] = $b >= 0 && $b <= 255 ? $b : 255;
+        $this->background['a'] = $a >= 0 && $a <= 1 ? $a : 1;
 
         return true;
     }

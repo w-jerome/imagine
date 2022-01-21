@@ -1057,10 +1057,12 @@ class Imagine
     {
         if ($isSrcMustDestroy) {
             @\imagedestroy($this->src);
+            $this->src = null;
         }
 
         if ($isDistMustDestroy) {
             @\imagedestroy($this->dist);
+            $this->dist = null;
         }
 
         return !$isSrcMustDestroy && !$isDistMustDestroy ? false : true;

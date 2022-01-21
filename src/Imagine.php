@@ -28,7 +28,7 @@ class Imagine
     private $thumbWidth = 0;
     private $thumbHeight = 0;
     private $quality = 100;
-    private $fit = 'stretch';
+    private $fit = 'contain';
     private $position = array('x' => 'center', 'y' => 'center');
     private $filters = array();
     private $background = array('r' => 255, 'g' => 255, 'b' => 255, 'a' => 1);
@@ -966,7 +966,7 @@ class Imagine
         int $srcHeight = 0,
         int $thumbWidth = 0,
         int $thumbHeight = 0,
-        string $fit = 'stretch'
+        string $fit = ''
     ): array {
         $distWidth = 0;
         $distHeight = 0;

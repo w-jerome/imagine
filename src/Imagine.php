@@ -29,7 +29,7 @@ class Imagine
     private $thumbHeight = 0;
     private $quality = 100;
     private $fit = 'stretch';
-    private $position = array('center', 'center');
+    private $position = array('x' => 'center', 'y' => 'center');
     private $filters = array();
     private $background = array('r' => 255, 'g' => 255, 'b' => 255, 'a' => 1);
     private $isInterlace = false;
@@ -486,7 +486,10 @@ class Imagine
             return false;
         }
 
-        $this->position = array($x, $y);
+        $this->position = array(
+            'x' => $x,
+            'y' => $y,
+        );
 
         return true;
     }
@@ -864,20 +867,20 @@ class Imagine
         // We do the calculation only if we are in "contain" or "cover".
         if ($this->fit === 'contain' || $this->fit === 'cover') {
             // X calcul
-            if ($this->position[0] === 'left') {
+            if ($this->position['x'] === 'left') {
                 $positionX = 0;
-            } elseif ($this->position[0] === 'center') {
+            } elseif ($this->position['x'] === 'center') {
                 $positionX = (int) (($this->thumbWidth - $this->distWidth) / 2);
-            } elseif ($this->position[0] === 'right') {
+            } elseif ($this->position['x'] === 'right') {
                 $positionX = (int) ($this->thumbWidth - (int) $this->distWidth);
             }
 
             // Y Calcul
-            if ($this->position[1] === 'top') {
+            if ($this->position['y'] === 'top') {
                 $positionY = 0;
-            } elseif ($this->position[1] === 'center') {
+            } elseif ($this->position['y'] === 'center') {
                 $positionY = (int) (($this->thumbHeight - $this->distHeight) / 2);
-            } elseif ($this->position[1] === 'bottom') {
+            } elseif ($this->position['y'] === 'bottom') {
                 $positionY = (int) ($this->thumbHeight - (int) $this->distHeight);
             }
         }

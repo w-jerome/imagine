@@ -35,12 +35,12 @@ class Imagine
     private $isInterlace = false;
     private $isOverride = true;
     private const TYPES_ALLOWED = array(
-        'jpg',
-        'jpeg',
-        'png',
-        'gif',
-        'webp',
-        'bmp',
+        'jpg' => 'image/jpeg',
+        'jpeg' => 'image/jpeg',
+        'png' => 'image/png',
+        'gif' => 'image/gif',
+        'webp' => 'image/webp',
+        'bmp' => 'image/bmp',
     );
     private const FITS_ALLOWED = array(
         'stretch',
@@ -319,17 +319,7 @@ class Imagine
     public function getDistMime(): string
     {
         if (empty($this->distMime)) {
-            if ($this->distType === 'jpg' || $this->distType === 'jpeg') {
-                return 'image/jpeg';
-            } elseif ($this->distType === 'png') {
-                return 'image/png';
-            } elseif ($this->distType === 'gif') {
-                return 'image/gif';
-            } elseif ($this->distType === 'webp') {
-                return 'image/webp';
-            } elseif ($this->distType === 'bmp') {
-                return 'image/bmp';
-            }
+            return $this->srcMime;
         }
 
         return $this->distMime;
@@ -343,11 +333,12 @@ class Imagine
      */
     public function setType(string $type = ''): bool
     {
-        if (!in_array($type, self::TYPES_ALLOWED)) {
+        if (!in_array($type, array_keys(self::TYPES_ALLOWED))) {
             return false;
         }
 
         $this->distType = $type;
+        $this->distMime = self::TYPES_ALLOWED[$type];
 
         return true;
     }
@@ -818,6 +809,11 @@ class Imagine
             $this->distDPI = $this->srcDPI;
         }
 
+        // Set the final extension if there is no conversion done on the file
+        if (empty($this->distType)) {
+            $this->setType($this->srcType);
+        }
+
         $dpi = \imageresolution($this->dist, $this->distDPI[0], $this->distDPI[1]);
 
         if (empty($dpi)) {
@@ -826,7 +822,7 @@ class Imagine
         }
 
         // If destination image is "jpg", force no transparent background
-        if ($this->distType === 'jpg' || $this->distType === 'jpeg') {
+        if ($this->distMime === 'image/jpeg' || $this->distMime === 'image/bmp') {
             $this->background['a'] = 1;
         }
 
@@ -915,12 +911,7 @@ class Imagine
             }
         }
 
-        // Set the final extension if there is no conversion done on the file
-        if (empty($this->distType)) {
-            $this->distType = $this->srcType;
-        }
-
-        if (($this->distType === 'jpg' || $this->distType === 'jpeg') && $this->isInterlace) {
+        if ($this->distMime === 'image/jpeg' && $this->isInterlace) {
             $isInterlace = \imageinterlace($this->dist, true);
 
             if (!$isInterlace) {
@@ -931,7 +922,7 @@ class Imagine
 
         $isCreate = false;
 
-        if ($this->distType === 'jpg' || $this->distType === 'jpeg') {
+        if ($this->distMime === 'image/jpeg') {
             $isCreate = \imagejpeg($this->dist, $destination, $this->quality);
         } elseif ($this->distType === 'png') {
             $isCreate = \imagepng($this->dist, $destination, ($this->quality * 9) / 100);

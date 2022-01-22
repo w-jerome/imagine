@@ -31,7 +31,7 @@ class Imagine
     private $fit = 'contain';
     private $position = array('x' => 'center', 'y' => 'center');
     private $filters = array();
-    private $background = array('r' => 255, 'g' => 255, 'b' => 255, 'a' => 1);
+    private $background = array('r' => 255, 'g' => 255, 'b' => 255, 'a' => 0);
     private $isInterlace = false;
     private $isOverride = true;
     private const TYPES_ALLOWED = array(
@@ -513,12 +513,12 @@ class Imagine
      * @param float $a Alpha
      * @return boolean
      */
-    public function setBackgroundFromRGBA(int $r = 255, int $g = 255, int $b = 255, float $a = 1): bool
+    public function setBackgroundFromRGBA(int $r = 255, int $g = 255, int $b = 255, float $a = 0): bool
     {
         $this->background['r'] = $r >= 0 && $r <= 255 ? $r : 255;
         $this->background['g'] = $g >= 0 && $g <= 255 ? $g : 255;
         $this->background['b'] = $b >= 0 && $b <= 255 ? $b : 255;
-        $this->background['a'] = $a >= 0 && $a <= 1 ? $a : 1;
+        $this->background['a'] = $a >= 0 && $a <= 1 ? $a : 0;
 
         return true;
     }

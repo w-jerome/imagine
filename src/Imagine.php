@@ -926,7 +926,7 @@ class Imagine
         if ($this->distMime === 'image/jpeg') {
             $isCreate = \imagejpeg($this->dist, $destination, $this->quality);
         } elseif ($this->distType === 'png') {
-            $isCreate = \imagepng($this->dist, $destination, ($this->quality * 9) / 100);
+            $isCreate = \imagepng($this->dist, $destination, (int) (((-$this->quality + 100) * 9) / 100));
         } elseif ($this->distType === 'gif') {
             $isCreate = \imagegif($this->dist, $destination);
         } elseif ($this->distType === 'webp') {

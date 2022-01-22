@@ -932,7 +932,7 @@ class Imagine
         } elseif ($this->distType === 'webp') {
             $isCreate = \imagewebp($this->dist, $destination, $this->quality);
         } elseif ($this->distType === 'bmp') {
-            $isCreate = \imagebmp($this->dist, $destination, $this->quality === 100);
+            $isCreate = \imagebmp($this->dist, $destination, $this->quality < 100);
         } else {
             $this->destroyTempImg($destroySrcGD, $destroyDistGD);
             return false;

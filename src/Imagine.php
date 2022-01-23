@@ -31,7 +31,7 @@ class Imagine
     private $fit = 'contain';
     private $position = array('x' => 'center', 'y' => 'center');
     private $filters = array();
-    private $background = array('r' => 255, 'g' => 255, 'b' => 255, 'a' => 1);
+    private $background = array('r' => 255, 'g' => 255, 'b' => 255, 'a' => 0);
     private $isInterlace = false;
     private $isOverride = true;
     private const TYPES_ALLOWED = array(
@@ -79,6 +79,17 @@ class Imagine
         $this->setSrcSize();
         $this->setSrcType();
         $this->setSrcDPI();
+
+
+        /*
+         * By default the quality is 100%, but if we process a PNG file,
+         * it will go through the 'imagepng()' function and the 100% quality makes
+         * the destination image much heavier than the source image (up to 11 times the original file size).
+         * So to avoid abuse, by default PNGs have a quality of 0% (which corresponds to a compression of '9')
+         */
+        if ($this->srcMime === 'image/png') {
+            $this->setQuality(0);
+        }
 
         return $this;
     }
@@ -513,12 +524,12 @@ class Imagine
      * @param float $a Alpha
      * @return boolean
      */
-    public function setBackgroundFromRGBA(int $r = 255, int $g = 255, int $b = 255, float $a = 1): bool
+    public function setBackgroundFromRGBA(int $r = 255, int $g = 255, int $b = 255, float $a = 0): bool
     {
         $this->background['r'] = $r >= 0 && $r <= 255 ? $r : 255;
         $this->background['g'] = $g >= 0 && $g <= 255 ? $g : 255;
         $this->background['b'] = $b >= 0 && $b <= 255 ? $b : 255;
-        $this->background['a'] = $a >= 0 && $a <= 1 ? $a : 1;
+        $this->background['a'] = $a >= 0 && $a <= 1 ? $a : 0;
 
         return true;
     }
@@ -926,13 +937,13 @@ class Imagine
         if ($this->distMime === 'image/jpeg') {
             $isCreate = \imagejpeg($this->dist, $destination, $this->quality);
         } elseif ($this->distType === 'png') {
-            $isCreate = \imagepng($this->dist, $destination, ($this->quality * 9) / 100);
+            $isCreate = \imagepng($this->dist, $destination, (int) (((-$this->quality + 100) * 9) / 100));
         } elseif ($this->distType === 'gif') {
-            $isCreate = \imagegif($this->dist, $destination, $this->quality);
+            $isCreate = \imagegif($this->dist, $destination);
         } elseif ($this->distType === 'webp') {
             $isCreate = \imagewebp($this->dist, $destination, $this->quality);
         } elseif ($this->distType === 'bmp') {
-            $isCreate = \imagebmp($this->dist, $destination, $this->quality === 100);
+            $isCreate = \imagebmp($this->dist, $destination, $this->quality < 100);
         } else {
             $this->destroyTempImg($destroySrcGD, $destroyDistGD);
             return false;

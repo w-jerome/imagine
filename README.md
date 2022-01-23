@@ -157,7 +157,6 @@ $image->save('./doc/img/example-05.jpg');
 $image = new Imagine('./tests/assets/file-transparent.png');
 $image->setWidth(300);
 $image->setHeight(300);
-$image->setFit('contain');
 $image->setBackgroundTransparent();
 $image->save('./doc/img/example-06.png');
 ```
@@ -170,7 +169,6 @@ $image->save('./doc/img/example-06.png');
 $image = new Imagine('./tests/assets/file-valid.jpg');
 $image->setWidth(300);
 $image->setHeight(300);
-$image->setFit('contain');
 $image->setBackgroundMainColor();
 $image->save('./doc/img/example-07.jpg');
 ```
@@ -183,7 +181,6 @@ $image->save('./doc/img/example-07.jpg');
 $image = new Imagine('./tests/assets/file-transparent.png');
 $image->setWidth(300);
 $image->setHeight(300);
-$image->setFit('contain');
 $image->setBackgroundFromRGBA(255, 0, 0, 1);
 $image->setType('jpg');
 $image->save('./doc/img/example-08.jpg');
@@ -197,7 +194,6 @@ $image->save('./doc/img/example-08.jpg');
 $image = new Imagine('./tests/assets/file-transparent.png');
 $image->setWidth(300);
 $image->setHeight(300);
-$image->setFit('contain');
 $image->setBackgroundFromHexa('#ffaaff');
 $image->setType('jpg');
 $image->save('./doc/img/example-09.jpg');
@@ -211,7 +207,6 @@ $image->save('./doc/img/example-09.jpg');
 $image = new Imagine('./tests/assets/file-valid.jpg');
 $image->setWidth(300);
 $image->setHeight(300);
-$image->setFit('contain');
 $image->setPosition('left', 'top');
 $image->save('./doc/img/example-10.jpg');
 ```
@@ -228,6 +223,28 @@ $image->save('./doc/img/example-11.jpg');
 ```
 
 ![example 11](/doc/img/example-11.jpg)
+
+#### Note: 1
+
+In PNG the quality is not a percentage, it is a value between `0` and `9`.
+`0` corresponds to no compression and `9` corresponds to the maximum compression. Here are the values to fill in `$image->setQuality()` :
+
+- `setQuality(0)` : compression `9`
+- `setQuality(1) -> setQuality(11)` : compression `8`
+- `setQuality(12) -> setQuality(22)` : compression `7`
+- `setQuality(23) -> setQuality(33)` : compression `6`
+- `setQuality(34) -> setQuality(44)` : compression `5`
+- `setQuality(45) -> setQuality(55)` : compression `4`
+- `setQuality(56) -> setQuality(66)` : compression `3`
+- `setQuality(67) -> setQuality(77)` : compression `2`
+- `setQuality(78) -> setQuality(88)` : compression `1`
+- `setQuality(89) -> setQuality(100)` : compression `0` (Be careful, the file size can be important)
+
+[For more information](https://www.php.net/manual/en/function.imagepng.php)
+
+#### Note: 2
+
+By default the quality is 100%, but if we process a PNG file, it will go through the `imagepng()` function and the 100% quality makes the destination image much heavier than the source image (up to 11 times the original file size). So to avoid abuse, by default PNGs have a quality of 0% (which corresponds to a compression of `9`).
 
 ### Convert MIME file
 

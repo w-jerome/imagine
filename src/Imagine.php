@@ -80,6 +80,17 @@ class Imagine
         $this->setSrcType();
         $this->setSrcDPI();
 
+
+        /*
+         * By default the quality is 100%, but if we process a PNG file,
+         * it will go through the 'imagepng()' function and the 100% quality makes
+         * the destination image much heavier than the source image (up to 11 times the original file size).
+         * So to avoid abuse, by default PNGs have a quality of 0% (which corresponds to a compression of '9')
+         */
+        if ($this->srcMime === 'image/png') {
+            $this->setQuality(0);
+        }
+
         return $this;
     }
 

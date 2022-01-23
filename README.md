@@ -224,7 +224,7 @@ $image->save('./doc/img/example-11.jpg');
 
 ![example 11](/doc/img/example-11.jpg)
 
-Note:
+#### Note: 1
 
 In PNG the quality is not a percentage, it is a value between `0` and `9`.
 `0` corresponds to no compression and `9` corresponds to the maximum compression. Here are the values to fill in `$image->setQuality()` :
@@ -241,6 +241,10 @@ In PNG the quality is not a percentage, it is a value between `0` and `9`.
 - `setQuality(89) -> setQuality(100)` : compression `0` (Be careful, the file size can be important)
 
 [For more information](https://www.php.net/manual/en/function.imagepng.php)
+
+#### Note: 2
+
+By default the quality is 100%, but if we process a PNG file, it will go through the `imagepng()` function and the 100% quality makes the destination image much heavier than the source image (up to 11 times the original file size). So to avoid abuse, by default PNGs have a quality of 0% (which corresponds to a compression of `9`).
 
 ### Convert MIME file
 

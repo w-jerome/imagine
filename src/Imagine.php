@@ -28,6 +28,13 @@ class Imagine
     private $thumbWidth = 0;
     private $thumbHeight = 0;
     private $quality = 100;
+    private $cropType = 'none';
+    private $cropSize = array(
+        'x' => 0,
+        'y' => 0,
+        'width' => 0,
+        'height' => 0,
+    );
     private $fit = 'contain';
     private $position = array('x' => 'center', 'y' => 'center');
     private $filters = array();
@@ -41,6 +48,11 @@ class Imagine
         'gif' => 'image/gif',
         'webp' => 'image/webp',
         'bmp' => 'image/bmp',
+    );
+    private const CROPS_ALLOWED = array(
+        'none',
+        'auto',
+        'manual',
     );
     private const FITS_ALLOWED = array(
         'stretch',
@@ -455,6 +467,93 @@ class Imagine
     }
 
     /**
+     * Crop the destination image by calculating the unused pixels
+     *
+     * @return boolean
+     */
+    public function setCropAuto(): bool
+    {
+        $this->cropType = 'auto';
+
+        return true;
+    }
+
+    /**
+     * Crop the destination image by passing the position and size in pixels
+     *
+     * @param integer $x X Position
+     * @param integer $y Y Position
+     * @param integer $width The width
+     * @param integer $height The height
+     * @return boolean
+     */
+    public function setCropFromPixel(int $x = 0, int $y = 0, int $width = 0, int $height = 0): bool
+    {
+        $this->cropType = 'manual';
+
+        $this->cropSize = array(
+            'x' => $x < 0 ? 0 : $x,
+            'y' => $y < 0 ? 0 : $y,
+            'width' => $width < 0 ? 0 : $width,
+            'height' => $height < 0 ? 0 : $height,
+        );
+
+        return true;
+    }
+
+    /**
+     * Crop the destination image by passing the position and size in percent
+     *
+     * @param integer $x X Position
+     * @param integer $y Y Position
+     * @param integer $width The width
+     * @param integer $height The height
+     * @return boolean
+     */
+    public function setCropFromPercent(int $x = 0, int $y = 0, int $width = 0, int $height = 0): bool
+    {
+        $this->cropType = 'manual';
+
+        $x = $x < 0 ? 0 : $x;
+        $x = $x > 100 ? 100 : $x;
+        $y = $y < 0 ? 0 : $y;
+        $y = $y > 100 ? 100 : $y;
+        $width = $width < 0 ? 0 : $width;
+        $width = $width > 100 ? 100 : $width;
+        $height = $height < 0 ? 0 : $height;
+        $height = $height > 100 ? 100 : $height;
+
+        $this->cropSize = array(
+            'x' => ($x / 100) * $this->srcWidth,
+            'y' => ($y / 100) * $this->srcHeight,
+            'width' => ($width / 100) * $this->srcWidth,
+            'height' => ($height / 100) * $this->srcHeight,
+        );
+
+        return true;
+    }
+
+    /**
+     * Returns the way the destination image will be cropped.
+     *
+     * @return string
+     */
+    public function getCropType(): string
+    {
+        return $this->cropType;
+    }
+
+    /**
+     * Returns the position and size of the cropping of the destination image
+     *
+     * @return array
+     */
+    public function getCropSize(): array
+    {
+        return $this->cropSize;
+    }
+
+    /**
      * Saves the way to stretch the destination image in the thumbnail
      *
      * @param string $fit The way to stretch the image (stretch|contain|cover)
@@ -797,9 +896,48 @@ class Imagine
      */
     private function render($destination = '', bool $destroySrcGD = true, bool $destroyDistGD = true): bool
     {
+        if ($this->cropType === 'none') {
+            $src = &$this->src;
+        } else {
+            $src = $this->src;
+        }
+
+        $srcWidth = $this->srcWidth;
+        $srcHeight = $this->srcHeight;
+
+        if ($this->cropType === 'auto') {
+            $srcCropped = imagecropauto($src, IMG_CROP_SIDES);
+
+            if (!$srcCropped) {
+                imagedestroy($src);
+                unset($src);
+                $this->destroyTempImg($destroySrcGD, false);
+                throw new \Exception('There was a problem while cropping the image');
+                return false;
+            }
+
+            $src = &$srcCropped;
+            $srcWidth = (int) imagesx($src);
+            $srcHeight = (int) imagesy($src);
+        } elseif ($this->cropType === 'manual') {
+            $srcCropped = imagecrop($src, $this->cropSize);
+
+            if (!$srcCropped) {
+                imagedestroy($src);
+                unset($src);
+                $this->destroyTempImg($destroySrcGD, false);
+                throw new \Exception('There was a problem while cropping the image');
+                return false;
+            }
+
+            $src = &$srcCropped;
+            $srcWidth = (int) imagesx($src);
+            $srcHeight = (int) imagesy($src);
+        }
+
         $outerSize = self::calculDistSizeFromThumbSize(
-            $this->srcWidth,
-            $this->srcHeight,
+            $srcWidth,
+            $srcHeight,
             $this->thumbWidth,
             $this->thumbHeight,
             $this->fit
@@ -813,6 +951,11 @@ class Imagine
         $this->dist = \imagecreatetruecolor($this->thumbWidth, $this->thumbHeight);
 
         if (empty($this->dist)) {
+            if ($this->cropType !== 'none') {
+                @imagedestroy($src);
+                unset($src);
+            }
+            $this->destroyTempImg($destroySrcGD, false);
             throw new \Exception('There is a problem when processing the destination file');
             return false;
         }
@@ -829,6 +972,11 @@ class Imagine
         $dpi = \imageresolution($this->dist, $this->distDPI['x'], $this->distDPI['y']);
 
         if (empty($dpi)) {
+            if ($this->cropType !== 'none') {
+                @imagedestroy($src);
+                unset($src);
+            }
+            $this->destroyTempImg($destroySrcGD, $destroyDistGD);
             throw new \Exception('There is a problem when processing the destination file');
             return false;
         }
@@ -890,16 +1038,21 @@ class Imagine
 
         $isSampled = \imagecopyresampled(
             $this->dist,
-            $this->src,
+            $src,
             $positionX,
             $positionY,
             0,
             0,
             $this->distWidth,
             $this->distHeight,
-            $this->srcWidth,
-            $this->srcHeight
+            $srcWidth,
+            $srcHeight
         );
+
+        if ($this->cropType !== 'none') {
+            @imagedestroy($src);
+            unset($src);
+        }
 
         if (!$isSampled) {
             $this->destroyTempImg($destroySrcGD, $destroyDistGD);
@@ -918,6 +1071,7 @@ class Imagine
             }
 
             if (!$check) {
+                $this->destroyTempImg($destroySrcGD, $destroyDistGD);
                 throw new \Exception('Can\'t apply filter ' . $filter['type']);
                 return false;
             }
@@ -927,6 +1081,7 @@ class Imagine
             $isInterlace = \imageinterlace($this->dist, true);
 
             if (!$isInterlace) {
+                $this->destroyTempImg($destroySrcGD, $destroyDistGD);
                 throw new \Exception('There was a problem to interlace');
                 return false;
             }

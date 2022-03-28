@@ -57,8 +57,8 @@ $image->setType('png');
 $image->setDPI(96);
 $image->setQuality(90);
 $image->setCropAuto();
-$image->setCropInPixel(0, 0, 300, 300);
-$image->setCropInPercent(0, 0, 100, 100);
+$image->setCropFromPixel(0, 0, 300, 300);
+$image->setCropFromPercent(0, 0, 100, 100);
 $image->setFit('cover');
 $image->setPosition('left', 'top');
 $image->setBackgroundFromRGBA(255, 255, 255, 1);
@@ -272,7 +272,7 @@ Crop the destination image by passing the position and size in pixels
 ```php
 $image = new Imagine('./tests/assets/file-transparent-border.png');
 $image->setBackgroundFromHexa('#ccc');
-$image->setCropInPixel(300, 150, 300, 150);
+$image->setCropFromPixel(300, 150, 300, 150);
 $image->save('./doc/img/example-17.jpg');
 ```
 
@@ -286,7 +286,7 @@ Crop the destination image by passing the position and size in percent
 $image = new Imagine('./tests/assets/file-transparent-border.png');
 $image->setBackgroundFromHexa('#ccc');
 $image->setWidth(300);
-$image->setCropInPercent(25, 25, 50, 50);
+$image->setCropFromPercent(25, 25, 50, 50);
 $image->save('./doc/img/example-18.jpg');
 ```
 

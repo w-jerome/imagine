@@ -487,7 +487,7 @@ class Imagine
      * @param integer $height The height
      * @return boolean
      */
-    public function setCropInPixel(int $x = 0, int $y = 0, int $width = 0, int $height = 0): bool
+    public function setCropFromPixel(int $x = 0, int $y = 0, int $width = 0, int $height = 0): bool
     {
         $this->cropType = 'manual';
 
@@ -510,7 +510,7 @@ class Imagine
      * @param integer $height The height
      * @return boolean
      */
-    public function setCropInPercent(int $x = 0, int $y = 0, int $width = 0, int $height = 0): bool
+    public function setCropFromPercent(int $x = 0, int $y = 0, int $width = 0, int $height = 0): bool
     {
         $this->cropType = 'manual';
 

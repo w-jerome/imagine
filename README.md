@@ -81,6 +81,7 @@ $image->getDistMime();
 $image->getDistType();
 $image->getDistDPI();
 $image->getQuality();
+$image->getCropAuto();
 $image->getCropType();
 $image->getCropSize();
 $image->getFit();

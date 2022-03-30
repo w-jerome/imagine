@@ -29,6 +29,11 @@ class Imagine
     private $thumbHeight = 0;
     private $quality = 100;
     private $cropType = 'none';
+    private $cropAuto = array(
+        'mode' => IMG_CROP_SIDES,
+        'threshold' => 0.5,
+        'color' => -1,
+    );
     private $cropSize = array(
         'x' => 0,
         'y' => 0,
@@ -469,13 +474,38 @@ class Imagine
     /**
      * Crop the destination image by calculating the unused pixels
      *
-     * @return boolean
+     * @param integer $mode The crop mode from PHP
+     * @param float $threshold
+     *  The percentage of tolerance used when comparing the image color (only in IMG_CROP_THRESHOLD)
+     * @param int $color The color used when comparing the crop (only in IMG_CROP_THRESHOLD)
+     * @return bool
      */
-    public function setCropAuto(): bool
+    public function setCropAuto(int $mode = IMG_CROP_SIDES, float $threshold = 0.5, int $color = -1): bool
     {
+        if ($mode === IMG_CROP_THRESHOLD && $color < 0) {
+            throw new \Exception('In threshold mode, $color must be greater than or equal to 0');
+            return false;
+        }
+
         $this->cropType = 'auto';
 
+        $this->cropAuto = array(
+            'mode' => $mode,
+            'threshold' => $threshold,
+            'color' => $color,
+        );
+
         return true;
+    }
+
+    /**
+     * Returns the auto-crop settings for the destination image
+     *
+     * @return array
+     */
+    public function getCropAuto(): array
+    {
+        return $this->cropAuto;
     }
 
     /**
@@ -906,7 +936,12 @@ class Imagine
         $srcHeight = $this->srcHeight;
 
         if ($this->cropType === 'auto') {
-            $srcCropped = imagecropauto($src, IMG_CROP_SIDES);
+            $srcCropped = imagecropauto(
+                $src,
+                $this->cropAuto['mode'],
+                $this->cropAuto['threshold'],
+                $this->cropAuto['color']
+            );
 
             if (!$srcCropped) {
                 imagedestroy($src);

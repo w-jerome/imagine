@@ -675,7 +675,7 @@ class Imagine
             return false;
         }
 
-        $this->background = $this->getHexaToRGBA($background);
+        $this->background = self::getHexaToRGBA($background);
 
         return true;
     }
@@ -733,7 +733,7 @@ class Imagine
 
             @\imagedestroy($thumb);
 
-            $this->background = $this->getHexaToRGBA($mainColor);
+            $this->background = self::getHexaToRGBA($mainColor);
 
             return true;
         } catch (\Exception $error) {
@@ -741,35 +741,6 @@ class Imagine
         }
 
         return false;
-    }
-
-    /**
-     * Returns the hexadecimal code as an array "rgba"
-     *
-     * @param string $hexa Hexadecimal code
-     * @return array
-     */
-    private function getHexaToRGBA(string $hexa = ''): array
-    {
-        $bg = array(
-            'r' => 255,
-            'g' => 255,
-            'b' => 255,
-            'a' => 1,
-        );
-
-        if (empty($hexa)) {
-            return $bg;
-        }
-
-        $hexa = str_replace('#', '', $hexa);
-        $hexa = mb_strlen($hexa) === 3 ? $hexa . $hexa : $hexa;
-
-        $bg['r'] = strlen($hexa) === 6 ? hexdec(substr($hexa, 0, 2)) : $bg['r'];
-        $bg['g'] = strlen($hexa) === 6 ? hexdec(substr($hexa, 2, 2)) : $bg['g'];
-        $bg['b'] = strlen($hexa) === 6 ? hexdec(substr($hexa, 4, 2)) : $bg['b'];
-
-        return $bg;
     }
 
     /**
@@ -1239,6 +1210,35 @@ class Imagine
             'distWidth' => (int) round($distWidth),
             'distHeight' => (int) round($distHeight),
         );
+    }
+
+    /**
+     * Returns the hexadecimal code as an array "rgba"
+     *
+     * @param string $hexa Hexadecimal code
+     * @return array
+     */
+    private static function getHexaToRGBA(string $hexa = ''): array
+    {
+        $bg = array(
+            'r' => 255,
+            'g' => 255,
+            'b' => 255,
+            'a' => 1,
+        );
+
+        if (empty($hexa)) {
+            return $bg;
+        }
+
+        $hexa = str_replace('#', '', $hexa);
+        $hexa = mb_strlen($hexa) === 3 ? $hexa . $hexa : $hexa;
+
+        $bg['r'] = strlen($hexa) === 6 ? hexdec(substr($hexa, 0, 2)) : $bg['r'];
+        $bg['g'] = strlen($hexa) === 6 ? hexdec(substr($hexa, 2, 2)) : $bg['g'];
+        $bg['b'] = strlen($hexa) === 6 ? hexdec(substr($hexa, 4, 2)) : $bg['b'];
+
+        return $bg;
     }
 
     /**

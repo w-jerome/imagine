@@ -1150,8 +1150,13 @@ class Imagine
     }
 
     /**
-     * Calculates the size of the destination image with the saved parameters
+     * Returns the size of the destination image based on the size of the source image and the size of the thumbnail
      *
+     * @param int $srcWidth The width of the source image
+     * @param int $srcHeight The height of the source image
+     * @param int $thumbWidth The width of the thumbnail
+     * @param int $thumbHeight The height of the thumbnail
+     * @param string $fit The way to stretch the image (stretch|contain|cover)
      * @return array
      */
     private static function calculDistSizeFromThumbSize(
@@ -1168,16 +1173,15 @@ class Imagine
         if ($thumbWidth > 0 xor $thumbHeight > 0) {
             // On enregistre la taille une fois redimmenssionné
             if ($thumbWidth) {
-                $thumbHeight = (int) ($srcHeight * ($thumbWidth / $srcWidth));
+                $thumbHeight = $srcHeight * ($thumbWidth / $srcWidth);
             } else {
-                $thumbWidth = (int) ($srcWidth * ($thumbHeight / $srcHeight));
+                $thumbWidth = $srcWidth * ($thumbHeight / $srcHeight);
             }
 
             $distWidth = $thumbWidth;
             $distHeight = $thumbHeight;
         } elseif ($thumbWidth > 0 && $thumbHeight > 0) {
             // On vérifit si c'est une vignette
-
             if ($fit === 'stretch') {
                 $distWidth = $thumbWidth;
                 $distHeight = $thumbHeight;
@@ -1214,28 +1218,26 @@ class Imagine
                     (in_array(true, $isArrayCover) && $fit === 'cover')
                 ) {
                     // On redimmensionne 'img' d'abord par sa largeur
-                    $distWidth = (int) (($srcWidth * $thumbHeight) / $srcHeight);
-                    $distHeight = (int) (($srcHeight * $distWidth) / $srcWidth);
+                    $distWidth = ($srcWidth * $thumbHeight) / $srcHeight;
+                    $distHeight = ($srcHeight * $distWidth) / $srcWidth;
                 } else {
                     // Si c'est le cas 2
-
                     // On redimmensionne 'img' d'abord par sa hauteur
-                    $distHeight = (int) (($srcHeight * $thumbWidth) / $srcWidth);
-                    $distWidth = (int) (($srcWidth * $distHeight) / $srcHeight);
+                    $distHeight = ($srcHeight * $thumbWidth) / $srcWidth;
+                    $distWidth = ($srcWidth * $distHeight) / $srcHeight;
                 }
             }
         } else {
             // Sinon on donne les même dimension que l'image original
-
-            $distWidth = $thumbWidth = (int) $srcWidth;
-            $distHeight = $thumbHeight = (int) $srcHeight;
+            $distWidth = $thumbWidth = $srcWidth;
+            $distHeight = $thumbHeight = $srcHeight;
         }
 
         return array(
-            'thumbWidth' => $thumbWidth,
-            'thumbHeight' => $thumbHeight,
-            'distWidth' => $distWidth,
-            'distHeight' => $distHeight,
+            'thumbWidth' => (int) round($thumbWidth),
+            'thumbHeight' => (int) round($thumbHeight),
+            'distWidth' => (int) round($distWidth),
+            'distHeight' => (int) round($distHeight),
         );
     }
 

@@ -276,7 +276,7 @@ class Imagine
             return $this->distWidth;
         }
 
-        $size = self::calculDistSizeFromThumbSize(
+        $size = self::getDistSizeFromSrcSizeAndThumbSize(
             $this->srcWidth,
             $this->srcHeight,
             $this->thumbWidth,
@@ -321,7 +321,7 @@ class Imagine
             return $this->distHeight;
         }
 
-        $size = self::calculDistSizeFromThumbSize(
+        $size = self::getDistSizeFromSrcSizeAndThumbSize(
             $this->srcWidth,
             $this->srcHeight,
             $this->thumbWidth,
@@ -941,7 +941,7 @@ class Imagine
             $srcHeight = (int) imagesy($src);
         }
 
-        $outerSize = self::calculDistSizeFromThumbSize(
+        $outerSize = self::getDistSizeFromSrcSizeAndThumbSize(
             $srcWidth,
             $srcHeight,
             $this->thumbWidth,
@@ -1130,7 +1130,7 @@ class Imagine
      * @param string $fit The way to stretch the image (stretch|contain|cover)
      * @return array
      */
-    private static function calculDistSizeFromThumbSize(
+    private static function getDistSizeFromSrcSizeAndThumbSize(
         int $srcWidth = 0,
         int $srcHeight = 0,
         int $thumbWidth = 0,

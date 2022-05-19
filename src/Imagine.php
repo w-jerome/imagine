@@ -276,7 +276,7 @@ class Imagine
             return $this->distWidth;
         }
 
-        $size = self::calculDistSizeFromThumbSize(
+        $size = self::getDistSizeFromSrcSizeAndThumbSize(
             $this->srcWidth,
             $this->srcHeight,
             $this->thumbWidth,
@@ -321,7 +321,7 @@ class Imagine
             return $this->distHeight;
         }
 
-        $size = self::calculDistSizeFromThumbSize(
+        $size = self::getDistSizeFromSrcSizeAndThumbSize(
             $this->srcWidth,
             $this->srcHeight,
             $this->thumbWidth,
@@ -675,7 +675,7 @@ class Imagine
             return false;
         }
 
-        $this->background = $this->getHexaToRGBA($background);
+        $this->background = self::getHexaFromRGBA($background);
 
         return true;
     }
@@ -733,7 +733,7 @@ class Imagine
 
             @\imagedestroy($thumb);
 
-            $this->background = $this->getHexaToRGBA($mainColor);
+            $this->background = self::getHexaFromRGBA($mainColor);
 
             return true;
         } catch (\Exception $error) {
@@ -741,35 +741,6 @@ class Imagine
         }
 
         return false;
-    }
-
-    /**
-     * Returns the hexadecimal code as an array "rgba"
-     *
-     * @param string $hexa Hexadecimal code
-     * @return array
-     */
-    private function getHexaToRGBA(string $hexa = ''): array
-    {
-        $bg = array(
-            'r' => 255,
-            'g' => 255,
-            'b' => 255,
-            'a' => 1,
-        );
-
-        if (empty($hexa)) {
-            return $bg;
-        }
-
-        $hexa = str_replace('#', '', $hexa);
-        $hexa = mb_strlen($hexa) === 3 ? $hexa . $hexa : $hexa;
-
-        $bg['r'] = strlen($hexa) === 6 ? hexdec(substr($hexa, 0, 2)) : $bg['r'];
-        $bg['g'] = strlen($hexa) === 6 ? hexdec(substr($hexa, 2, 2)) : $bg['g'];
-        $bg['b'] = strlen($hexa) === 6 ? hexdec(substr($hexa, 4, 2)) : $bg['b'];
-
-        return $bg;
     }
 
     /**
@@ -787,7 +758,7 @@ class Imagine
      *
      * @return string
      */
-    public function getBackgroundToHexa(): string
+    public function getBackgroundFromHexa(): string
     {
         return str_pad(dechex($this->background['r']), 2, '0', STR_PAD_LEFT) .
             str_pad(dechex($this->background['g']), 2, '0', STR_PAD_LEFT) .
@@ -970,7 +941,7 @@ class Imagine
             $srcHeight = (int) imagesy($src);
         }
 
-        $outerSize = self::calculDistSizeFromThumbSize(
+        $outerSize = self::getDistSizeFromSrcSizeAndThumbSize(
             $srcWidth,
             $srcHeight,
             $this->thumbWidth,
@@ -1150,11 +1121,16 @@ class Imagine
     }
 
     /**
-     * Calculates the size of the destination image with the saved parameters
+     * Returns the size of the destination image based on the size of the source image and the size of the thumbnail
      *
+     * @param int $srcWidth The width of the source image
+     * @param int $srcHeight The height of the source image
+     * @param int $thumbWidth The width of the thumbnail
+     * @param int $thumbHeight The height of the thumbnail
+     * @param string $fit The way to stretch the image (stretch|contain|cover)
      * @return array
      */
-    private static function calculDistSizeFromThumbSize(
+    private static function getDistSizeFromSrcSizeAndThumbSize(
         int $srcWidth = 0,
         int $srcHeight = 0,
         int $thumbWidth = 0,
@@ -1168,16 +1144,15 @@ class Imagine
         if ($thumbWidth > 0 xor $thumbHeight > 0) {
             // On enregistre la taille une fois redimmenssionné
             if ($thumbWidth) {
-                $thumbHeight = (int) ($srcHeight * ($thumbWidth / $srcWidth));
+                $thumbHeight = $srcHeight * ($thumbWidth / $srcWidth);
             } else {
-                $thumbWidth = (int) ($srcWidth * ($thumbHeight / $srcHeight));
+                $thumbWidth = $srcWidth * ($thumbHeight / $srcHeight);
             }
 
             $distWidth = $thumbWidth;
             $distHeight = $thumbHeight;
         } elseif ($thumbWidth > 0 && $thumbHeight > 0) {
             // On vérifit si c'est une vignette
-
             if ($fit === 'stretch') {
                 $distWidth = $thumbWidth;
                 $distHeight = $thumbHeight;
@@ -1214,29 +1189,56 @@ class Imagine
                     (in_array(true, $isArrayCover) && $fit === 'cover')
                 ) {
                     // On redimmensionne 'img' d'abord par sa largeur
-                    $distWidth = (int) (($srcWidth * $thumbHeight) / $srcHeight);
-                    $distHeight = (int) (($srcHeight * $distWidth) / $srcWidth);
+                    $distWidth = ($srcWidth * $thumbHeight) / $srcHeight;
+                    $distHeight = ($srcHeight * $distWidth) / $srcWidth;
                 } else {
                     // Si c'est le cas 2
-
                     // On redimmensionne 'img' d'abord par sa hauteur
-                    $distHeight = (int) (($srcHeight * $thumbWidth) / $srcWidth);
-                    $distWidth = (int) (($srcWidth * $distHeight) / $srcHeight);
+                    $distHeight = ($srcHeight * $thumbWidth) / $srcWidth;
+                    $distWidth = ($srcWidth * $distHeight) / $srcHeight;
                 }
             }
         } else {
             // Sinon on donne les même dimension que l'image original
-
-            $distWidth = $thumbWidth = (int) $srcWidth;
-            $distHeight = $thumbHeight = (int) $srcHeight;
+            $distWidth = $thumbWidth = $srcWidth;
+            $distHeight = $thumbHeight = $srcHeight;
         }
 
         return array(
-            'thumbWidth' => $thumbWidth,
-            'thumbHeight' => $thumbHeight,
-            'distWidth' => $distWidth,
-            'distHeight' => $distHeight,
+            'thumbWidth' => (int) round($thumbWidth),
+            'thumbHeight' => (int) round($thumbHeight),
+            'distWidth' => (int) round($distWidth),
+            'distHeight' => (int) round($distHeight),
         );
+    }
+
+    /**
+     * Returns the hexadecimal code as an array "rgba"
+     *
+     * @param string $hexa Hexadecimal code
+     * @return array
+     */
+    private static function getHexaFromRGBA(string $hexa = ''): array
+    {
+        $bg = array(
+            'r' => 255,
+            'g' => 255,
+            'b' => 255,
+            'a' => 1,
+        );
+
+        if (empty($hexa)) {
+            return $bg;
+        }
+
+        $hexa = str_replace('#', '', $hexa);
+        $hexa = mb_strlen($hexa) === 3 ? $hexa . $hexa : $hexa;
+
+        $bg['r'] = strlen($hexa) === 6 ? hexdec(substr($hexa, 0, 2)) : $bg['r'];
+        $bg['g'] = strlen($hexa) === 6 ? hexdec(substr($hexa, 2, 2)) : $bg['g'];
+        $bg['b'] = strlen($hexa) === 6 ? hexdec(substr($hexa, 4, 2)) : $bg['b'];
+
+        return $bg;
     }
 
     /**

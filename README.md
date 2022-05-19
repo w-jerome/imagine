@@ -87,7 +87,7 @@ $image->getCropSize();
 $image->getFit();
 $image->getPosition();
 $image->getBackground();
-$image->getBackgroundToHexa();
+$image->getBackgroundFromHexa();
 $image->getFilters();
 $image->getIsInterlace();
 $image->getIsOverride();

@@ -675,7 +675,7 @@ class Imagine
             return false;
         }
 
-        $this->background = self::getHexaToRGBA($background);
+        $this->background = self::getHexaFromRGBA($background);
 
         return true;
     }
@@ -733,7 +733,7 @@ class Imagine
 
             @\imagedestroy($thumb);
 
-            $this->background = self::getHexaToRGBA($mainColor);
+            $this->background = self::getHexaFromRGBA($mainColor);
 
             return true;
         } catch (\Exception $error) {
@@ -758,7 +758,7 @@ class Imagine
      *
      * @return string
      */
-    public function getBackgroundToHexa(): string
+    public function getBackgroundFromHexa(): string
     {
         return str_pad(dechex($this->background['r']), 2, '0', STR_PAD_LEFT) .
             str_pad(dechex($this->background['g']), 2, '0', STR_PAD_LEFT) .
@@ -1218,7 +1218,7 @@ class Imagine
      * @param string $hexa Hexadecimal code
      * @return array
      */
-    private static function getHexaToRGBA(string $hexa = ''): array
+    private static function getHexaFromRGBA(string $hexa = ''): array
     {
         $bg = array(
             'r' => 255,

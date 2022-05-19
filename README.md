@@ -56,6 +56,9 @@ $image->setHeight(290);
 $image->setType('png');
 $image->setDPI(96);
 $image->setQuality(90);
+$image->setCropAuto();
+$image->setCropFromPixel(0, 0, 300, 300);
+$image->setCropFromPercent(0, 0, 100, 100);
 $image->setFit('cover');
 $image->setPosition('left', 'top');
 $image->setBackgroundFromRGBA(255, 255, 255, 1);
@@ -78,10 +81,13 @@ $image->getDistMime();
 $image->getDistType();
 $image->getDistDPI();
 $image->getQuality();
+$image->getCropAuto();
+$image->getCropType();
+$image->getCropSize();
 $image->getFit();
 $image->getPosition();
 $image->getBackground();
-$image->getBackgroundToHexa();
+$image->getBackgroundFromHexa();
 $image->getFilters();
 $image->getIsInterlace();
 $image->getIsOverride();
@@ -245,6 +251,47 @@ In PNG the quality is not a percentage, it is a value between `0` and `9`.
 #### Note: 2
 
 By default the quality is 100%, but if we process a PNG file, it will go through the `imagepng()` function and the 100% quality makes the destination image much heavier than the source image (up to 11 times the original file size). So to avoid abuse, by default PNGs have a quality of 0% (which corresponds to a compression of `9`).
+
+### Crop auto
+
+Crop the destination image by calculating the unused pixels
+
+```php
+$image = new Imagine('./tests/assets/file-transparent-border.png');
+$image->setBackgroundFromHexa('#ccc');
+$image->setWidth(300);
+$image->setCropAuto();
+$image->save('./doc/img/example-16.jpg');
+```
+
+![example 16](/doc/img/example-16.jpg)
+
+### Manual cropping (in pixel)
+
+Crop the destination image by passing the position and size in pixels
+
+```php
+$image = new Imagine('./tests/assets/file-transparent-border.png');
+$image->setBackgroundFromHexa('#ccc');
+$image->setCropFromPixel(300, 150, 300, 150);
+$image->save('./doc/img/example-17.jpg');
+```
+
+![example 17](/doc/img/example-17.jpg)
+
+### Manual cropping (in percent)
+
+Crop the destination image by passing the position and size in percent
+
+```php
+$image = new Imagine('./tests/assets/file-transparent-border.png');
+$image->setBackgroundFromHexa('#ccc');
+$image->setWidth(300);
+$image->setCropFromPercent(25, 25, 50, 50);
+$image->save('./doc/img/example-18.jpg');
+```
+
+![example 18](/doc/img/example-18.jpg)
 
 ### Convert MIME file
 

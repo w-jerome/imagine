@@ -28,6 +28,18 @@ class Imagine
     private $thumbWidth = 0;
     private $thumbHeight = 0;
     private $quality = 100;
+    private $cropType = 'none';
+    private $cropAuto = array(
+        'mode' => IMG_CROP_SIDES,
+        'threshold' => 0.5,
+        'color' => -1,
+    );
+    private $cropSize = array(
+        'x' => 0,
+        'y' => 0,
+        'width' => 0,
+        'height' => 0,
+    );
     private $fit = 'contain';
     private $position = array('x' => 'center', 'y' => 'center');
     private $filters = array();
@@ -41,6 +53,11 @@ class Imagine
         'gif' => 'image/gif',
         'webp' => 'image/webp',
         'bmp' => 'image/bmp',
+    );
+    private const CROPS_ALLOWED = array(
+        'none',
+        'auto',
+        'manual',
     );
     private const FITS_ALLOWED = array(
         'stretch',
@@ -259,7 +276,7 @@ class Imagine
             return $this->distWidth;
         }
 
-        $size = self::calculDistSizeFromThumbSize(
+        $size = self::getDistSizeFromSrcSizeAndThumbSize(
             $this->srcWidth,
             $this->srcHeight,
             $this->thumbWidth,
@@ -304,7 +321,7 @@ class Imagine
             return $this->distHeight;
         }
 
-        $size = self::calculDistSizeFromThumbSize(
+        $size = self::getDistSizeFromSrcSizeAndThumbSize(
             $this->srcWidth,
             $this->srcHeight,
             $this->thumbWidth,
@@ -455,6 +472,118 @@ class Imagine
     }
 
     /**
+     * Crop the destination image by calculating the unused pixels
+     *
+     * @param integer $mode The crop mode from PHP
+     * @param float $threshold
+     *  The percentage of tolerance used when comparing the image color (only in IMG_CROP_THRESHOLD)
+     * @param int $color The color used when comparing the crop (only in IMG_CROP_THRESHOLD)
+     * @return bool
+     */
+    public function setCropAuto(int $mode = IMG_CROP_SIDES, float $threshold = 0.5, int $color = -1): bool
+    {
+        if ($mode === IMG_CROP_THRESHOLD && $color < 0) {
+            throw new \Exception('In threshold mode, $color must be greater than or equal to 0');
+            return false;
+        }
+
+        $this->cropType = 'auto';
+
+        $this->cropAuto = array(
+            'mode' => $mode,
+            'threshold' => $threshold,
+            'color' => $color,
+        );
+
+        return true;
+    }
+
+    /**
+     * Returns the auto-crop settings for the destination image
+     *
+     * @return array
+     */
+    public function getCropAuto(): array
+    {
+        return $this->cropAuto;
+    }
+
+    /**
+     * Crop the destination image by passing the position and size in pixels
+     *
+     * @param integer $x X Position
+     * @param integer $y Y Position
+     * @param integer $width The width
+     * @param integer $height The height
+     * @return boolean
+     */
+    public function setCropFromPixel(int $x = 0, int $y = 0, int $width = 0, int $height = 0): bool
+    {
+        $this->cropType = 'manual';
+
+        $this->cropSize = array(
+            'x' => $x < 0 ? 0 : $x,
+            'y' => $y < 0 ? 0 : $y,
+            'width' => $width < 0 ? 0 : $width,
+            'height' => $height < 0 ? 0 : $height,
+        );
+
+        return true;
+    }
+
+    /**
+     * Crop the destination image by passing the position and size in percent
+     *
+     * @param integer $x X Position
+     * @param integer $y Y Position
+     * @param integer $width The width
+     * @param integer $height The height
+     * @return boolean
+     */
+    public function setCropFromPercent(int $x = 0, int $y = 0, int $width = 0, int $height = 0): bool
+    {
+        $this->cropType = 'manual';
+
+        $x = $x < 0 ? 0 : $x;
+        $x = $x > 100 ? 100 : $x;
+        $y = $y < 0 ? 0 : $y;
+        $y = $y > 100 ? 100 : $y;
+        $width = $width < 0 ? 0 : $width;
+        $width = $width > 100 ? 100 : $width;
+        $height = $height < 0 ? 0 : $height;
+        $height = $height > 100 ? 100 : $height;
+
+        $this->cropSize = array(
+            'x' => ($x / 100) * $this->srcWidth,
+            'y' => ($y / 100) * $this->srcHeight,
+            'width' => ($width / 100) * $this->srcWidth,
+            'height' => ($height / 100) * $this->srcHeight,
+        );
+
+        return true;
+    }
+
+    /**
+     * Returns the way the destination image will be cropped.
+     *
+     * @return string
+     */
+    public function getCropType(): string
+    {
+        return $this->cropType;
+    }
+
+    /**
+     * Returns the position and size of the cropping of the destination image
+     *
+     * @return array
+     */
+    public function getCropSize(): array
+    {
+        return $this->cropSize;
+    }
+
+    /**
      * Saves the way to stretch the destination image in the thumbnail
      *
      * @param string $fit The way to stretch the image (stretch|contain|cover)
@@ -546,7 +675,7 @@ class Imagine
             return false;
         }
 
-        $this->background = $this->getHexaToRGBA($background);
+        $this->background = self::getHexaFromRGBA($background);
 
         return true;
     }
@@ -604,7 +733,7 @@ class Imagine
 
             @\imagedestroy($thumb);
 
-            $this->background = $this->getHexaToRGBA($mainColor);
+            $this->background = self::getHexaFromRGBA($mainColor);
 
             return true;
         } catch (\Exception $error) {
@@ -612,35 +741,6 @@ class Imagine
         }
 
         return false;
-    }
-
-    /**
-     * Returns the hexadecimal code as an array "rgba"
-     *
-     * @param string $hexa Hexadecimal code
-     * @return array
-     */
-    private function getHexaToRGBA(string $hexa = ''): array
-    {
-        $bg = array(
-            'r' => 255,
-            'g' => 255,
-            'b' => 255,
-            'a' => 1,
-        );
-
-        if (empty($hexa)) {
-            return $bg;
-        }
-
-        $hexa = str_replace('#', '', $hexa);
-        $hexa = mb_strlen($hexa) === 3 ? $hexa . $hexa : $hexa;
-
-        $bg['r'] = strlen($hexa) === 6 ? hexdec(substr($hexa, 0, 2)) : $bg['r'];
-        $bg['g'] = strlen($hexa) === 6 ? hexdec(substr($hexa, 2, 2)) : $bg['g'];
-        $bg['b'] = strlen($hexa) === 6 ? hexdec(substr($hexa, 4, 2)) : $bg['b'];
-
-        return $bg;
     }
 
     /**
@@ -658,7 +758,7 @@ class Imagine
      *
      * @return string
      */
-    public function getBackgroundToHexa(): string
+    public function getBackgroundFromHexa(): string
     {
         return str_pad(dechex($this->background['r']), 2, '0', STR_PAD_LEFT) .
             str_pad(dechex($this->background['g']), 2, '0', STR_PAD_LEFT) .
@@ -797,9 +897,53 @@ class Imagine
      */
     private function render($destination = '', bool $destroySrcGD = true, bool $destroyDistGD = true): bool
     {
-        $outerSize = self::calculDistSizeFromThumbSize(
-            $this->srcWidth,
-            $this->srcHeight,
+        if ($this->cropType === 'none') {
+            $src = &$this->src;
+        } else {
+            $src = $this->src;
+        }
+
+        $srcWidth = $this->srcWidth;
+        $srcHeight = $this->srcHeight;
+
+        if ($this->cropType === 'auto') {
+            $srcCropped = imagecropauto(
+                $src,
+                $this->cropAuto['mode'],
+                $this->cropAuto['threshold'],
+                $this->cropAuto['color']
+            );
+
+            if (!$srcCropped) {
+                imagedestroy($src);
+                unset($src);
+                $this->destroyTempImg($destroySrcGD, false);
+                throw new \Exception('There was a problem while cropping the image');
+                return false;
+            }
+
+            $src = &$srcCropped;
+            $srcWidth = (int) imagesx($src);
+            $srcHeight = (int) imagesy($src);
+        } elseif ($this->cropType === 'manual') {
+            $srcCropped = imagecrop($src, $this->cropSize);
+
+            if (!$srcCropped) {
+                imagedestroy($src);
+                unset($src);
+                $this->destroyTempImg($destroySrcGD, false);
+                throw new \Exception('There was a problem while cropping the image');
+                return false;
+            }
+
+            $src = &$srcCropped;
+            $srcWidth = (int) imagesx($src);
+            $srcHeight = (int) imagesy($src);
+        }
+
+        $outerSize = self::getDistSizeFromSrcSizeAndThumbSize(
+            $srcWidth,
+            $srcHeight,
             $this->thumbWidth,
             $this->thumbHeight,
             $this->fit
@@ -813,6 +957,11 @@ class Imagine
         $this->dist = \imagecreatetruecolor($this->thumbWidth, $this->thumbHeight);
 
         if (empty($this->dist)) {
+            if ($this->cropType !== 'none') {
+                @imagedestroy($src);
+                unset($src);
+            }
+            $this->destroyTempImg($destroySrcGD, false);
             throw new \Exception('There is a problem when processing the destination file');
             return false;
         }
@@ -829,6 +978,11 @@ class Imagine
         $dpi = \imageresolution($this->dist, $this->distDPI['x'], $this->distDPI['y']);
 
         if (empty($dpi)) {
+            if ($this->cropType !== 'none') {
+                @imagedestroy($src);
+                unset($src);
+            }
+            $this->destroyTempImg($destroySrcGD, $destroyDistGD);
             throw new \Exception('There is a problem when processing the destination file');
             return false;
         }
@@ -890,16 +1044,21 @@ class Imagine
 
         $isSampled = \imagecopyresampled(
             $this->dist,
-            $this->src,
+            $src,
             $positionX,
             $positionY,
             0,
             0,
             $this->distWidth,
             $this->distHeight,
-            $this->srcWidth,
-            $this->srcHeight
+            $srcWidth,
+            $srcHeight
         );
+
+        if ($this->cropType !== 'none') {
+            @imagedestroy($src);
+            unset($src);
+        }
 
         if (!$isSampled) {
             $this->destroyTempImg($destroySrcGD, $destroyDistGD);
@@ -918,6 +1077,7 @@ class Imagine
             }
 
             if (!$check) {
+                $this->destroyTempImg($destroySrcGD, $destroyDistGD);
                 throw new \Exception('Can\'t apply filter ' . $filter['type']);
                 return false;
             }
@@ -927,6 +1087,7 @@ class Imagine
             $isInterlace = \imageinterlace($this->dist, true);
 
             if (!$isInterlace) {
+                $this->destroyTempImg($destroySrcGD, $destroyDistGD);
                 throw new \Exception('There was a problem to interlace');
                 return false;
             }
@@ -960,11 +1121,16 @@ class Imagine
     }
 
     /**
-     * Calculates the size of the destination image with the saved parameters
+     * Returns the size of the destination image based on the size of the source image and the size of the thumbnail
      *
+     * @param int $srcWidth The width of the source image
+     * @param int $srcHeight The height of the source image
+     * @param int $thumbWidth The width of the thumbnail
+     * @param int $thumbHeight The height of the thumbnail
+     * @param string $fit The way to stretch the image (stretch|contain|cover)
      * @return array
      */
-    private static function calculDistSizeFromThumbSize(
+    private static function getDistSizeFromSrcSizeAndThumbSize(
         int $srcWidth = 0,
         int $srcHeight = 0,
         int $thumbWidth = 0,
@@ -978,16 +1144,15 @@ class Imagine
         if ($thumbWidth > 0 xor $thumbHeight > 0) {
             // On enregistre la taille une fois redimmenssionné
             if ($thumbWidth) {
-                $thumbHeight = (int) ($srcHeight * ($thumbWidth / $srcWidth));
+                $thumbHeight = $srcHeight * ($thumbWidth / $srcWidth);
             } else {
-                $thumbWidth = (int) ($srcWidth * ($thumbHeight / $srcHeight));
+                $thumbWidth = $srcWidth * ($thumbHeight / $srcHeight);
             }
 
             $distWidth = $thumbWidth;
             $distHeight = $thumbHeight;
         } elseif ($thumbWidth > 0 && $thumbHeight > 0) {
             // On vérifit si c'est une vignette
-
             if ($fit === 'stretch') {
                 $distWidth = $thumbWidth;
                 $distHeight = $thumbHeight;
@@ -1024,29 +1189,56 @@ class Imagine
                     (in_array(true, $isArrayCover) && $fit === 'cover')
                 ) {
                     // On redimmensionne 'img' d'abord par sa largeur
-                    $distWidth = (int) (($srcWidth * $thumbHeight) / $srcHeight);
-                    $distHeight = (int) (($srcHeight * $distWidth) / $srcWidth);
+                    $distWidth = ($srcWidth * $thumbHeight) / $srcHeight;
+                    $distHeight = ($srcHeight * $distWidth) / $srcWidth;
                 } else {
                     // Si c'est le cas 2
-
                     // On redimmensionne 'img' d'abord par sa hauteur
-                    $distHeight = (int) (($srcHeight * $thumbWidth) / $srcWidth);
-                    $distWidth = (int) (($srcWidth * $distHeight) / $srcHeight);
+                    $distHeight = ($srcHeight * $thumbWidth) / $srcWidth;
+                    $distWidth = ($srcWidth * $distHeight) / $srcHeight;
                 }
             }
         } else {
             // Sinon on donne les même dimension que l'image original
-
-            $distWidth = $thumbWidth = (int) $srcWidth;
-            $distHeight = $thumbHeight = (int) $srcHeight;
+            $distWidth = $thumbWidth = $srcWidth;
+            $distHeight = $thumbHeight = $srcHeight;
         }
 
         return array(
-            'thumbWidth' => $thumbWidth,
-            'thumbHeight' => $thumbHeight,
-            'distWidth' => $distWidth,
-            'distHeight' => $distHeight,
+            'thumbWidth' => (int) round($thumbWidth),
+            'thumbHeight' => (int) round($thumbHeight),
+            'distWidth' => (int) round($distWidth),
+            'distHeight' => (int) round($distHeight),
         );
+    }
+
+    /**
+     * Returns the hexadecimal code as an array "rgba"
+     *
+     * @param string $hexa Hexadecimal code
+     * @return array
+     */
+    private static function getHexaFromRGBA(string $hexa = ''): array
+    {
+        $bg = array(
+            'r' => 255,
+            'g' => 255,
+            'b' => 255,
+            'a' => 1,
+        );
+
+        if (empty($hexa)) {
+            return $bg;
+        }
+
+        $hexa = str_replace('#', '', $hexa);
+        $hexa = mb_strlen($hexa) === 3 ? $hexa . $hexa : $hexa;
+
+        $bg['r'] = strlen($hexa) === 6 ? hexdec(substr($hexa, 0, 2)) : $bg['r'];
+        $bg['g'] = strlen($hexa) === 6 ? hexdec(substr($hexa, 2, 2)) : $bg['g'];
+        $bg['b'] = strlen($hexa) === 6 ? hexdec(substr($hexa, 4, 2)) : $bg['b'];
+
+        return $bg;
     }
 
     /**

@@ -96,7 +96,6 @@ $image->getIsOverride();
 $image->save('./uploads/my-image.jpg');
 
 // Or render in browser
-header('Content-type:image/png');
 $image->displayOnBrowser();
 ```
 
@@ -346,7 +345,5 @@ $image->save('./doc/img/example-15.jpg');
 
 ```php
 $image = new Imagine('./tests/assets/file-valid.jpg');
-$mime = $image->getDistMime();
-header('Content-type:' . $mime);
 $image->displayOnBrowser();
 ```

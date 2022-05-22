@@ -878,12 +878,20 @@ class Imagine
     /**
      * Applies the settings to the destination image and displays it in the browser
      *
+     * @param boolean $autoHeaderContentType Automatically adds a "Content-type" header
      * @param boolean $destroySrcGD Destroyed from the GD resource of the source image when finished
      * @param boolean $destroyDistGD Destroyed from the GD resource of the destination image when finished
      * @return boolean
      */
-    public function displayOnBrowser(bool $destroySrcGD = true, bool $destroyDistGD = true): bool
-    {
+    public function displayOnBrowser(
+        bool $autoHeaderContentType = true,
+        bool $destroySrcGD = true,
+        bool $destroyDistGD = true
+    ): bool {
+        if ($autoHeaderContentType) {
+            header('Content-type:' . $this->getDistMime());
+        }
+
         return $this->render(null, $destroySrcGD, $destroyDistGD);
     }
 

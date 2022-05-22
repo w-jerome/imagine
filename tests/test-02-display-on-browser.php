@@ -18,7 +18,7 @@ final class ImagineDisplayOnBrowserTest extends TestCase
 
         ob_start();
 
-        $image->displayOnBrowser();
+        $image->displayOnBrowser(false);
 
         $fileStream = ob_get_contents();
         ob_end_clean();

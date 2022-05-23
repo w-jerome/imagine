@@ -70,9 +70,8 @@ final class ImagineSaveTest extends TestCase
         $outputPath = './tests/assets/output-temp/test-03-process-04.jpg';
 
         $image = new Imagine($this->file);
-        $isCreate = $image->save($outputPath);
+        $image = $image->save($outputPath);
 
-        $this->assertSame($isCreate, true);
         $this->assertFileExists($outputPath);
         $this->assertSimilarGD($inputPath, $outputPath);
     }

@@ -30,15 +30,20 @@ try {
   $image = new Imagine($_FILES['image']['tmp_name']);
   $image->setWidth(200);
   $image->setHeight(290);
-
-  if ($image->save('./uploads/my-image.jpg')) {
-    // true
-  } else {
-    // false
-  }
+  $image->save('./uploads/my-image.jpg');
 } catch (Exception $e) {
-  echo 'Exception reçue : ',  $e->getMessage(), "\n";
+  echo 'Exception: ',  $e->getMessage();
 }
+```
+
+```php
+// Chaining methods
+(new Imagine('./my-image.jpg'))
+  ->setWidth(200)
+  ->setHeight(200)
+  ->setQuality(90)
+  ->setFit('cover')
+  ->save('./uploads/my-image.jpg');
 ```
 
 ### Functions

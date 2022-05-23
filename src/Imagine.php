@@ -97,7 +97,6 @@ class Imagine
         $this->setSrcType();
         $this->setSrcDPI();
 
-
         /*
          * By default the quality is 100%, but if we process a PNG file,
          * it will go through the 'imagepng()' function and the 100% quality makes
@@ -107,22 +106,20 @@ class Imagine
         if ($this->srcMime === 'image/png') {
             $this->setQuality(0);
         }
-
-        return $this;
     }
 
     /**
      * Save the MIME of the source image
      *
-     * @return boolean
+     * @return Imagine
      */
-    private function setSrcMime(): bool
+    private function setSrcMime(): Imagine
     {
         $info = \finfo_open(FILEINFO_MIME_TYPE);
 
         if (!$info) {
             throw new \Exception('There is a problem to get the information from the source image');
-            return false;
+            return $this;
         }
 
         $file = \finfo_file($info, $this->srcPath);
@@ -130,22 +127,22 @@ class Imagine
         if (!$file) {
             \finfo_close($info);
             throw new \Exception('There is a problem to get the information from the source image');
-            return false;
+            return $this;
         }
 
         $this->srcMime = $file;
 
         \finfo_close($info);
 
-        return true;
+        return $this;
     }
 
     /**
      * Save the source image as a GD resource
      *
-     * @return boolean
+     * @return Imagine
      */
-    private function setSrc(): bool
+    private function setSrc(): Imagine
     {
         if ($this->srcMime === 'image/jpeg') {
             $this->src = \imagecreatefromjpeg($this->srcPath);
@@ -161,38 +158,37 @@ class Imagine
 
         if (empty($this->src)) {
             throw new \Exception('There is a problem to create the GD resource from the source image');
-            return false;
         }
 
-        return true;
+        return $this;
     }
 
     /**
      * Saves the size of the source image
      *
-     * @return boolean
+     * @return Imagine
      */
-    private function setSrcSize(): bool
+    private function setSrcSize(): Imagine
     {
         $info = \getimagesize($this->srcPath);
 
         if (empty($info) || (!is_int($info[0]) || !is_int($info[1]))) {
             throw new \Exception('There is a problem to get the size of the source image');
-            return false;
+            return $this;
         }
 
         $this->srcWidth = (int) $info[0];
         $this->srcHeight = (int) $info[1];
 
-        return true;
+        return $this;
     }
 
     /**
      * Save the type of the source image
      *
-     * @return boolean
+     * @return Imagine
      */
-    private function setSrcType(): bool
+    private function setSrcType(): Imagine
     {
         if ($this->srcMime === 'image/jpeg') {
             $extension = \pathinfo($this->srcPath, PATHINFO_EXTENSION);
@@ -214,24 +210,23 @@ class Imagine
 
         if (empty($this->srcType)) {
             throw new \Exception('There is a problem to get the type of the source image');
-            return false;
         }
 
-        return true;
+        return $this;
     }
 
     /**
      * Save the DPI of the source image
      *
-     * @return boolean
+     * @return Imagine
      */
-    private function setSrcDPI(): bool
+    private function setSrcDPI(): Imagine
     {
         $dpi = \imageresolution($this->src);
 
         if (empty($dpi)) {
             throw new \Exception('There was an error while searching for the resolution');
-            return false;
+            return $this;
         }
 
         $this->srcDPI = array(
@@ -239,20 +234,20 @@ class Imagine
             'y' => $dpi[1],
         );
 
-        return true;
+        return $this;
     }
 
     /**
      * Saves the width of the destination image
      *
      * @param integer $width The width of the destination image
-     * @return boolean
+     * @return Imagine
      */
-    public function setWidth(int $width = 0): bool
+    public function setWidth(int $width = 0): Imagine
     {
         $this->thumbWidth = $width <= 0 ? 0 : $width;
 
-        return true;
+        return $this;
     }
 
     /**
@@ -291,13 +286,13 @@ class Imagine
      * Saves the height of the destination image
      *
      * @param integer $height The height of the destination image
-     * @return boolean
+     * @return Imagine
      */
-    public function setHeight(int $height = 0): bool
+    public function setHeight(int $height = 0): Imagine
     {
         $this->thumbHeight = $height <= 0 ? 0 : $height;
 
-        return true;
+        return $this;
     }
 
     /**
@@ -360,18 +355,19 @@ class Imagine
      * Convert the type of the destination image
      *
      * @param string $type The type of the destination image (jpg|jpeg|png|gif|webp|bmp)
-     * @return boolean
+     * @return Imagine
      */
-    public function setType(string $type = ''): bool
+    public function setType(string $type = ''): Imagine
     {
         if (!in_array($type, array_keys(self::TYPES_ALLOWED))) {
-            return false;
+            throw new \Exception('This type of image is not supported');
+            return $this;
         }
 
         $this->distType = $type;
         $this->distMime = self::TYPES_ALLOWED[$type];
 
-        return true;
+        return $this;
     }
 
     /**
@@ -403,9 +399,9 @@ class Imagine
      *
      * @param integer $dpiX DPI in width
      * @param integer $dpiY DPI in height
-     * @return boolean
+     * @return Imagine
      */
-    public function setDPI(int $dpiX = 0, int $dpiY = 0): bool
+    public function setDPI(int $dpiX = 0, int $dpiY = 0): Imagine
     {
         $dpiX = ($dpiX <= 0) ? 72 : $dpiX;
         $dpiY = ($dpiY <= 0) ? $dpiX : $dpiY;
@@ -415,7 +411,7 @@ class Imagine
             'y' => $dpiY,
         );
 
-        return true;
+        return $this;
     }
 
     /**
@@ -446,9 +442,9 @@ class Imagine
      * Saves the quality of the image
      *
      * @param integer $quality Quality applied in percentage
-     * @return boolean
+     * @return Imagine
      */
-    public function setQuality(int $quality = 100): bool
+    public function setQuality(int $quality = 100): Imagine
     {
         if ($quality < 0) {
             $quality = 0;
@@ -458,7 +454,7 @@ class Imagine
 
         $this->quality = $quality;
 
-        return true;
+        return $this;
     }
 
     /**
@@ -478,13 +474,13 @@ class Imagine
      * @param float $threshold
      *  The percentage of tolerance used when comparing the image color (only in IMG_CROP_THRESHOLD)
      * @param int $color The color used when comparing the crop (only in IMG_CROP_THRESHOLD)
-     * @return bool
+     * @return Imagine
      */
-    public function setCropAuto(int $mode = IMG_CROP_SIDES, float $threshold = 0.5, int $color = -1): bool
+    public function setCropAuto(int $mode = IMG_CROP_SIDES, float $threshold = 0.5, int $color = -1): Imagine
     {
         if ($mode === IMG_CROP_THRESHOLD && $color < 0) {
             throw new \Exception('In threshold mode, $color must be greater than or equal to 0');
-            return false;
+            return $this;
         }
 
         $this->cropType = 'auto';
@@ -495,7 +491,7 @@ class Imagine
             'color' => $color,
         );
 
-        return true;
+        return $this;
     }
 
     /**
@@ -515,9 +511,9 @@ class Imagine
      * @param integer $y Y Position
      * @param integer $width The width
      * @param integer $height The height
-     * @return boolean
+     * @return Imagine
      */
-    public function setCropFromPixel(int $x = 0, int $y = 0, int $width = 0, int $height = 0): bool
+    public function setCropFromPixel(int $x = 0, int $y = 0, int $width = 0, int $height = 0): Imagine
     {
         $this->cropType = 'manual';
 
@@ -528,7 +524,7 @@ class Imagine
             'height' => $height < 0 ? 0 : $height,
         );
 
-        return true;
+        return $this;
     }
 
     /**
@@ -538,9 +534,9 @@ class Imagine
      * @param integer $y Y Position
      * @param integer $width The width
      * @param integer $height The height
-     * @return boolean
+     * @return Imagine
      */
-    public function setCropFromPercent(int $x = 0, int $y = 0, int $width = 0, int $height = 0): bool
+    public function setCropFromPercent(int $x = 0, int $y = 0, int $width = 0, int $height = 0): Imagine
     {
         $this->cropType = 'manual';
 
@@ -560,7 +556,7 @@ class Imagine
             'height' => ($height / 100) * $this->srcHeight,
         );
 
-        return true;
+        return $this;
     }
 
     /**
@@ -587,17 +583,18 @@ class Imagine
      * Saves the way to stretch the destination image in the thumbnail
      *
      * @param string $fit The way to stretch the image (stretch|contain|cover)
-     * @return boolean
+     * @return Imagine
      */
-    public function setFit(string $fit = ''): bool
+    public function setFit(string $fit = ''): Imagine
     {
         if (!in_array($fit, self::FITS_ALLOWED)) {
-            return false;
+            throw new \Exception('This type of fit is not supported');
+            return $this;
         }
 
         $this->fit = $fit;
 
-        return true;
+        return $this;
     }
 
     /**
@@ -615,15 +612,16 @@ class Imagine
      *
      * @param string $x The horizontal position (left|center|right)
      * @param string $y The vertical position (top|center|bottom)
-     * @return boolean
+     * @return Imagine
      */
-    public function setPosition(string $x = 'center', string $y = 'center'): bool
+    public function setPosition(string $x = 'center', string $y = 'center'): Imagine
     {
         $xAllowed = array('left', 'center', 'right');
         $yAllowed = array('top', 'center', 'bottom');
 
         if (!in_array($x, $xAllowed) || !in_array($y, $yAllowed)) {
-            return false;
+            throw new \Exception('This type of position is not supported');
+            return $this;
         }
 
         $this->position = array(
@@ -631,7 +629,7 @@ class Imagine
             'y' => $y,
         );
 
-        return true;
+        return $this;
     }
 
     /**
@@ -651,41 +649,37 @@ class Imagine
      * @param integer $g Green
      * @param integer $b Blue
      * @param float $a Alpha
-     * @return boolean
+     * @return Imagine
      */
-    public function setBackgroundFromRGBA(int $r = 255, int $g = 255, int $b = 255, float $a = 0): bool
+    public function setBackgroundFromRGBA(int $r = 255, int $g = 255, int $b = 255, float $a = 0): Imagine
     {
         $this->background['r'] = $r >= 0 && $r <= 255 ? $r : 255;
         $this->background['g'] = $g >= 0 && $g <= 255 ? $g : 255;
         $this->background['b'] = $b >= 0 && $b <= 255 ? $b : 255;
         $this->background['a'] = $a >= 0 && $a <= 1 ? $a : 0;
 
-        return true;
+        return $this;
     }
 
     /**
      * Saves the background color of the destination image with a hexadecimal code
      *
      * @param string $background Hexadecimal code
-     * @return boolean
+     * @return Imagine
      */
-    public function setBackgroundFromHexa(string $background = ''): bool
+    public function setBackgroundFromHexa(string $background = ''): Imagine
     {
-        if (!is_string($background)) {
-            return false;
-        }
-
         $this->background = self::getHexaFromRGBA($background);
 
-        return true;
+        return $this;
     }
 
     /**
      * Saves the background color of the destination image as transparent
      *
-     * @return boolean
+     * @return Imagine
      */
-    public function setBackgroundTransparent(): bool
+    public function setBackgroundTransparent(): Imagine
     {
         $this->background = array(
             'r' => 255,
@@ -694,20 +688,20 @@ class Imagine
             'a' => 0,
         );
 
-        return true;
+        return $this;
     }
 
     /**
      * Saves the background color of the destination image with the main color
      *
-     * @return boolean
+     * @return Imagine
      */
-    public function setBackgroundMainColor(): bool
+    public function setBackgroundMainColor(): Imagine
     {
         try {
             if (empty($this->src)) {
                 throw new \Exception('There was an error when filling in the background color');
-                return false;
+                return $this;
             }
 
             $thumb = @\imagecreatetruecolor(1, 1);
@@ -718,7 +712,7 @@ class Imagine
             if ($index === false) {
                 @\imagedestroy($thumb);
                 throw new \Exception('There was an error when filling in the background color');
-                return false;
+                return $this;
             }
 
             $mainColor = @strtolower(@dechex($index));
@@ -726,7 +720,7 @@ class Imagine
             if (empty($mainColor)) {
                 @\imagedestroy($thumb);
                 throw new \Exception('There was an error when filling in the background color');
-                return false;
+                return $this;
             }
 
             $mainColor = '#' . (string) $mainColor;
@@ -735,12 +729,11 @@ class Imagine
 
             $this->background = self::getHexaFromRGBA($mainColor);
 
-            return true;
+            return $this;
         } catch (\Exception $error) {
-            return false;
+            throw $error;
+            return $this;
         }
-
-        return false;
     }
 
     /**
@@ -770,12 +763,13 @@ class Imagine
      *
      * @param integer $filterConstant The GD filter constant (https://www.php.net/manual/fr/function.imagefilter.php)
      * @param mixed $params Filter parameters
-     * @return boolean
+     * @return Imagine
      */
-    public function addFilter(int $filterConstant = -1, mixed $params = null): bool
+    public function addFilter(int $filterConstant = -1, mixed $params = null): Imagine
     {
         if (is_int($filterConstant) && $filterConstant === -1) {
-            return false;
+            throw new \Exception('This GD filter constant does not exist');
+            return $this;
         }
 
         $filter = array(
@@ -788,7 +782,7 @@ class Imagine
 
         $this->filters[] = $filter;
 
-        return true;
+        return $this;
     }
 
     /**
@@ -805,13 +799,13 @@ class Imagine
      * Saves if the destination image is to be displayed gradually (only jpg)
      *
      * @param boolean $isInterlace If the destination image is to be displayed gradually
-     * @return boolean
+     * @return Imagine
      */
-    public function setIsInterlace(bool $isInterlace = true): bool
+    public function setIsInterlace(bool $isInterlace = true): Imagine
     {
         $this->isInterlace = $isInterlace;
 
-        return true;
+        return $this;
     }
 
     /**
@@ -828,13 +822,13 @@ class Imagine
      * Saves whether to override the destination image or not
      *
      * @param boolean $isOverride Override or not the destination image
-     * @return boolean
+     * @return Imagine
      */
-    public function setIsOverride(bool $isOverride = true): bool
+    public function setIsOverride(bool $isOverride = true): Imagine
     {
         $this->isOverride = $isOverride;
 
-        return true;
+        return $this;
     }
 
     /**
@@ -853,23 +847,23 @@ class Imagine
      * @param string $destination The path of the destination file
      * @param boolean $destroySrcGD Destroyed from the GD resource of the source image when finished
      * @param boolean $destroyDistGD Destroyed from the GD resource of the destination image when finished
-     * @return boolean
+     * @return Imagine
      */
-    public function save(string $destination = '', bool $destroySrcGD = true, bool $destroyDistGD = true): bool
+    public function save(string $destination = '', bool $destroySrcGD = true, bool $destroyDistGD = true): Imagine
     {
         if (empty($destination)) {
             throw new \Exception('The destination path does not exist');
-            return false;
+            return $this;
         }
 
         if (!is_dir(dirname($destination))) {
             throw new \Exception('The destination path does not exist');
-            return false;
+            return $this;
         }
 
         if (file_exists($destination) && !$this->isOverride) {
             throw new \Exception('File rewriting is disabled');
-            return false;
+            return $this;
         }
 
         return $this->render($destination, $destroySrcGD, $destroyDistGD);
@@ -881,13 +875,13 @@ class Imagine
      * @param boolean $autoHeaderContentType Automatically adds a "Content-type" header
      * @param boolean $destroySrcGD Destroyed from the GD resource of the source image when finished
      * @param boolean $destroyDistGD Destroyed from the GD resource of the destination image when finished
-     * @return boolean
+     * @return Imagine
      */
     public function displayOnBrowser(
         bool $autoHeaderContentType = true,
         bool $destroySrcGD = true,
         bool $destroyDistGD = true
-    ): bool {
+    ): Imagine {
         if ($autoHeaderContentType) {
             header('Content-type:' . $this->getDistMime());
         }
@@ -901,9 +895,9 @@ class Imagine
      * @param string|null $destination The path of the destination file
      * @param boolean $destroySrcGD Destroyed from the GD resource of the source image when finished
      * @param boolean $destroyDistGD Destroyed from the GD resource of the destination image when finished
-     * @return boolean
+     * @return Imagine
      */
-    private function render($destination = '', bool $destroySrcGD = true, bool $destroyDistGD = true): bool
+    private function render($destination = '', bool $destroySrcGD = true, bool $destroyDistGD = true): Imagine
     {
         if ($this->cropType === 'none') {
             $src = &$this->src;
@@ -927,7 +921,7 @@ class Imagine
                 unset($src);
                 $this->destroyTempImg($destroySrcGD, false);
                 throw new \Exception('There was a problem while cropping the image');
-                return false;
+                return $this;
             }
 
             $src = &$srcCropped;
@@ -941,7 +935,7 @@ class Imagine
                 unset($src);
                 $this->destroyTempImg($destroySrcGD, false);
                 throw new \Exception('There was a problem while cropping the image');
-                return false;
+                return $this;
             }
 
             $src = &$srcCropped;
@@ -971,7 +965,7 @@ class Imagine
             }
             $this->destroyTempImg($destroySrcGD, false);
             throw new \Exception('There is a problem when processing the destination file');
-            return false;
+            return $this;
         }
 
         if (empty($this->distDPI['x']) || empty($this->distDPI['y'])) {
@@ -992,7 +986,7 @@ class Imagine
             }
             $this->destroyTempImg($destroySrcGD, $destroyDistGD);
             throw new \Exception('There is a problem when processing the destination file');
-            return false;
+            return $this;
         }
 
         // If destination image is "jpg", force no transparent background
@@ -1071,7 +1065,7 @@ class Imagine
         if (!$isSampled) {
             $this->destroyTempImg($destroySrcGD, $destroyDistGD);
             throw new \Exception('Can\'t create the temp destination image');
-            return false;
+            return $this;
         }
 
         // Apply the filters
@@ -1087,7 +1081,7 @@ class Imagine
             if (!$check) {
                 $this->destroyTempImg($destroySrcGD, $destroyDistGD);
                 throw new \Exception('Can\'t apply filter ' . $filter['type']);
-                return false;
+                return $this;
             }
         }
 
@@ -1097,7 +1091,7 @@ class Imagine
             if (!$isInterlace) {
                 $this->destroyTempImg($destroySrcGD, $destroyDistGD);
                 throw new \Exception('There was a problem to interlace');
-                return false;
+                return $this;
             }
         }
 
@@ -1115,17 +1109,18 @@ class Imagine
             $isCreate = \imagebmp($this->dist, $destination, $this->quality < 100);
         } else {
             $this->destroyTempImg($destroySrcGD, $destroyDistGD);
-            return false;
+            throw new \Exception('WTF error');
+            return $this;
         }
 
         $this->destroyTempImg($destroySrcGD, $destroyDistGD);
 
         if (!$isCreate) {
             throw new \Exception('Can\'t create destination image');
-            return false;
+            return $this;
         }
 
-        return true;
+        return $this;
     }
 
     /**

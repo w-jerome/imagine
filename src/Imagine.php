@@ -109,6 +109,44 @@ class Imagine
     }
 
     /**
+     * Reset the configuration
+     *
+     * @return Imagine
+     */
+    public function reset(): Imagine
+    {
+        $this->dist = null;
+        $this->distWidth = 0;
+        $this->distHeight = 0;
+        $this->distMime = '';
+        $this->distType = '';
+        $this->distDPI = array('x' => 0, 'y' => 0);
+        $this->thumbWidth = 0;
+        $this->thumbHeight = 0;
+        $this->quality = 100;
+        $this->cropType = 'none';
+        $this->cropAuto = array(
+            'mode' => IMG_CROP_SIDES,
+            'threshold' => 0.5,
+            'color' => -1,
+        );
+        $this->cropSize = array(
+            'x' => 0,
+            'y' => 0,
+            'width' => 0,
+            'height' => 0,
+        );
+        $this->fit = 'contain';
+        $this->position = array('x' => 'center', 'y' => 'center');
+        $this->filters = array();
+        $this->background = array('r' => 255, 'g' => 255, 'b' => 255, 'a' => 0);
+        $this->isInterlace = false;
+        $this->isOverride = true;
+
+        return $this;
+    }
+
+    /**
      * Save the MIME of the source image
      *
      * @return Imagine
@@ -842,7 +880,7 @@ class Imagine
     }
 
     /**
-     * Apply the settings to the destination image and save it to a file
+     * Create the final image in a file
      *
      * @param string $destination The path of the destination file
      * @param boolean $destroySrcGD Destroyed from the GD resource of the source image when finished
@@ -870,7 +908,30 @@ class Imagine
     }
 
     /**
-     * Applies the settings to the destination image and displays it in the browser
+     * Create the final image in a file without resetting the "Imagine" configuration
+     *
+     * @param string $destination The path of the destination file
+     * @return Imagine
+     */
+    public function saveAndContinue(string $destination = ''): Imagine
+    {
+        return $this->save($destination, false, true);
+    }
+
+    /**
+     * Create the final image in a file and reset the "Imagine" configuration
+     *
+     * @param string $destination The path of the destination file
+     * @return Imagine
+     */
+    public function saveAndReset(string $destination = ''): Imagine
+    {
+        $this->save($destination, false, true);
+        return $this->reset();
+    }
+
+    /**
+     * Displays the final image in the browser
      *
      * @param boolean $autoHeaderContentType Automatically adds a "Content-type" header
      * @param boolean $destroySrcGD Destroyed from the GD resource of the source image when finished
@@ -907,6 +968,10 @@ class Imagine
 
         $srcWidth = $this->srcWidth;
         $srcHeight = $this->srcHeight;
+        $thumbWidth = $this->thumbWidth;
+        $thumbHeight = $this->thumbHeight;
+        $distWidth = $this->distWidth;
+        $distHeight = $this->distHeight;
 
         if ($this->cropType === 'auto') {
             $srcCropped = imagecropauto(
@@ -946,17 +1011,17 @@ class Imagine
         $outerSize = self::getDistSizeFromSrcSizeAndThumbSize(
             $srcWidth,
             $srcHeight,
-            $this->thumbWidth,
-            $this->thumbHeight,
+            $thumbWidth,
+            $thumbHeight,
             $this->fit
         );
 
-        $this->thumbWidth = $outerSize['thumbWidth'];
-        $this->thumbHeight = $outerSize['thumbHeight'];
-        $this->distWidth = $outerSize['distWidth'];
-        $this->distHeight = $outerSize['distHeight'];
+        $thumbWidth = $outerSize['thumbWidth'];
+        $thumbHeight = $outerSize['thumbHeight'];
+        $distWidth = $outerSize['distWidth'];
+        $distHeight = $outerSize['distHeight'];
 
-        $this->dist = \imagecreatetruecolor($this->thumbWidth, $this->thumbHeight);
+        $this->dist = \imagecreatetruecolor($thumbWidth, $thumbHeight);
 
         if (empty($this->dist)) {
             if ($this->cropType !== 'none') {
@@ -1015,7 +1080,7 @@ class Imagine
                 $this->background['g'],
                 $this->background['b']
             );
-            \imagefilledrectangle($this->dist, 0, 0, $this->thumbWidth, $this->thumbHeight, $bgColor);
+            \imagefilledrectangle($this->dist, 0, 0, $thumbWidth, $thumbHeight, $bgColor);
             unset($bgColor);
         }
 
@@ -1029,18 +1094,18 @@ class Imagine
             if ($this->position['x'] === 'left') {
                 $positionX = 0;
             } elseif ($this->position['x'] === 'center') {
-                $positionX = (int) (($this->thumbWidth - $this->distWidth) / 2);
+                $positionX = (int) (($thumbWidth - $distWidth) / 2);
             } elseif ($this->position['x'] === 'right') {
-                $positionX = (int) ($this->thumbWidth - (int) $this->distWidth);
+                $positionX = (int) ($thumbWidth - (int) $distWidth);
             }
 
             // Y Calcul
             if ($this->position['y'] === 'top') {
                 $positionY = 0;
             } elseif ($this->position['y'] === 'center') {
-                $positionY = (int) (($this->thumbHeight - $this->distHeight) / 2);
+                $positionY = (int) (($thumbHeight - $distHeight) / 2);
             } elseif ($this->position['y'] === 'bottom') {
-                $positionY = (int) ($this->thumbHeight - (int) $this->distHeight);
+                $positionY = (int) ($thumbHeight - (int) $distHeight);
             }
         }
 
@@ -1051,8 +1116,8 @@ class Imagine
             $positionY,
             0,
             0,
-            $this->distWidth,
-            $this->distHeight,
+            $distWidth,
+            $distHeight,
             $srcWidth,
             $srcHeight
         );

@@ -30,15 +30,20 @@ try {
   $image = new Imagine($_FILES['image']['tmp_name']);
   $image->setWidth(200);
   $image->setHeight(290);
-
-  if ($image->save('./uploads/my-image.jpg')) {
-    // true
-  } else {
-    // false
-  }
+  $image->save('./uploads/my-image.jpg');
 } catch (Exception $e) {
-  echo 'Exception reçue : ',  $e->getMessage(), "\n";
+  echo 'Exception: ' . $e->getMessage();
 }
+```
+
+```php
+// Chaining methods
+(new Imagine('./my-image.jpg'))
+  ->setWidth(200)
+  ->setHeight(200)
+  ->setQuality(90)
+  ->setFit('cover')
+  ->save('./uploads/my-image.jpg');
 ```
 
 ### Functions
@@ -68,6 +73,7 @@ $image->setBackgroundMainColor();
 $image->addFilter(IMG_FILTER_GRAYSCALE);
 $image->setIsInterlace(true);
 $image->setIsOverride(false);
+$image->reset();
 
 // Getter
 $image->getSrcWidth();
@@ -94,9 +100,10 @@ $image->getIsOverride();
 
 // Save file
 $image->save('./uploads/my-image.jpg');
+$image->saveAndContinue('./uploads/my-image.jpg');
+$image->saveAndReset('./uploads/my-image.jpg');
 
 // Or render in browser
-header('Content-type:image/png');
 $image->displayOnBrowser();
 ```
 
@@ -346,7 +353,49 @@ $image->save('./doc/img/example-15.jpg');
 
 ```php
 $image = new Imagine('./tests/assets/file-valid.jpg');
-$mime = $image->getDistMime();
-header('Content-type:' . $mime);
 $image->displayOnBrowser();
 ```
+
+### Create multiple images with a single resource
+
+#### Reset settings each time a file is written
+
+```php
+$image = new Imagine('./tests/assets/file-valid.jpg');
+$image->addFilter(IMG_FILTER_GRAYSCALE);
+$image->setWidth(300);
+$image->setHeight(300);
+$image->setQuality(80);
+$image->saveAndReset('./doc/img/example-16-1.jpg');
+$image->setWidth(500);
+$image->setFit('cover');
+$image->saveAndReset('./doc/img/example-16-2.jpg');
+$image->setWidth(1000);
+$image->setQuality(100);
+$image->save('./doc/img/example-16-3.jpg');
+```
+
+![example 16-1](/doc/img/example-16-1.jpg)
+![example 16-2](/doc/img/example-16-2.jpg)
+![example 16-3](/doc/img/example-16-3.jpg)
+
+#### Keeps the previous configuration each time the file is written
+
+```php
+$image = new Imagine('./tests/assets/file-valid.jpg');
+$image->addFilter(IMG_FILTER_GRAYSCALE);
+$image->setWidth(300);
+$image->setHeight(300);
+$image->setQuality(80);
+$image->saveAndContinue('./doc/img/example-16-4.jpg');
+$image->setWidth(500);
+$image->setFit('cover');
+$image->saveAndContinue('./doc/img/example-16-5.jpg');
+$image->setWidth(1000);
+$image->setQuality(100);
+$image->save('./doc/img/example-16-6.jpg');
+```
+
+![example 16-4](/doc/img/example-16-4.jpg)
+![example 16-5](/doc/img/example-16-5.jpg)
+![example 16-6](/doc/img/example-16-6.jpg)

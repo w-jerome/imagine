@@ -73,6 +73,7 @@ $image->setBackgroundMainColor();
 $image->addFilter(IMG_FILTER_GRAYSCALE);
 $image->setIsInterlace(true);
 $image->setIsOverride(false);
+$image->reset();
 
 // Getter
 $image->getSrcWidth();
@@ -99,6 +100,8 @@ $image->getIsOverride();
 
 // Save file
 $image->save('./uploads/my-image.jpg');
+$image->saveAndContinue('./uploads/my-image.jpg');
+$image->saveAndReset('./uploads/my-image.jpg');
 
 // Or render in browser
 $image->displayOnBrowser();
@@ -376,7 +379,7 @@ $image->save('./doc/img/example-16-3.jpg');
 ![example 16-2](/doc/img/example-16-2.jpg)
 ![example 16-3](/doc/img/example-16-3.jpg)
 
-#### Reset settings each time a file is written
+#### Keeps the previous configuration each time the file is written
 
 ```php
 $image = new Imagine('./tests/assets/file-valid.jpg');

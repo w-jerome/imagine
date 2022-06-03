@@ -32,7 +32,7 @@ try {
   $image->setHeight(290);
   $image->save('./uploads/my-image.jpg');
 } catch (Exception $e) {
-  echo 'Exception: ',  $e->getMessage();
+  echo 'Exception: ' . $e->getMessage();
 }
 ```
 
@@ -352,3 +352,47 @@ $image->save('./doc/img/example-15.jpg');
 $image = new Imagine('./tests/assets/file-valid.jpg');
 $image->displayOnBrowser();
 ```
+
+### Create multiple images with a single resource
+
+#### Reset settings each time a file is written
+
+```php
+$image = new Imagine('./tests/assets/file-valid.jpg');
+$image->addFilter(IMG_FILTER_GRAYSCALE);
+$image->setWidth(300);
+$image->setHeight(300);
+$image->setQuality(80);
+$image->saveAndReset('./doc/img/example-16-1.jpg');
+$image->setWidth(500);
+$image->setFit('cover');
+$image->saveAndReset('./doc/img/example-16-2.jpg');
+$image->setWidth(1000);
+$image->setQuality(100);
+$image->save('./doc/img/example-16-3.jpg');
+```
+
+![example 16-1](/doc/img/example-16-1.jpg)
+![example 16-2](/doc/img/example-16-2.jpg)
+![example 16-3](/doc/img/example-16-3.jpg)
+
+#### Reset settings each time a file is written
+
+```php
+$image = new Imagine('./tests/assets/file-valid.jpg');
+$image->addFilter(IMG_FILTER_GRAYSCALE);
+$image->setWidth(300);
+$image->setHeight(300);
+$image->setQuality(80);
+$image->saveAndContinue('./doc/img/example-16-4.jpg');
+$image->setWidth(500);
+$image->setFit('cover');
+$image->saveAndContinue('./doc/img/example-16-5.jpg');
+$image->setWidth(1000);
+$image->setQuality(100);
+$image->save('./doc/img/example-16-6.jpg');
+```
+
+![example 16-4](/doc/img/example-16-4.jpg)
+![example 16-5](/doc/img/example-16-5.jpg)
+![example 16-6](/doc/img/example-16-6.jpg)
